@@ -1,0 +1,20 @@
+[submodule "safeboot"]
+	path = safeboot
+	url = ../safeboot.git
+	branch = master
+[submodule "upstream-tools/tpm2-tss"]
+	path = upstream-tools/tpm2-tss
+	url = ../tpm2-tss.git
+	branch = master
+[submodule "upstream-tools/tpm2-tools"]
+	path = upstream-tools/tpm2-tools
+	url = ../tpm2-tools.git
+	branch = master
+[submodule "upstream-tools/libtpms"]
+	path = upstream-tools/libtpms
+	url = ../libtpms.git
+	branch = master
+[submodule "upstream-tools/swtpm"]
+	path = upstream-tools/swtpm
+	url = ../swtpm.git
+	branch = master
