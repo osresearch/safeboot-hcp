@@ -1,0 +1,36 @@
+# Some summary notes about the attestment service, a.k.a. "attestsvc".
+#
+# This service consists of two sub-services; "hcp" and "repl", which perform
+# complementary functions but operate on common state (a directory bind-mounted
+# into both containers);
+#  * The common state consists of;
+#    - clones of the enrollment database, that are updated from the Enrollment
+#      Service (enrollsvc-repl) and rotated by the 'attestsvc-repl' container.
+#    - a "msgbus" directory, into which;
+#      - the services write their stdout/stderr,
+#      - control software outside the service containers can write commands to
+#        be picked up by the services. Currently, this is limited to "stop"
+#        functionality, which writes "die" to a file the service is
+#        "tail_wait"ing, triggering it to exit.
+#  * "attestsvc::hcp" provides the attestation endpoint for HCP clients (hosts).
+#    - The common state is mounted read-only!
+#    - After setting up the environment and dropping privileges, control is
+#      passed entirely to safeboot/attest-server (outside this "hcp" source
+#      tree) to accept connections and respond to attestation requests.
+#  * "attestsvc::repl" handles replication and updating of (local) common state.
+#    - The common state is mounted read-write.
+#    - This service provides fault-tolerance and reliability;
+#      - Inability to reach the Enrollment Service is logged, and results in
+#        less frequent retries until connectivity is reestablished.
+#      - Any failures or anomalies in the pulling of updates (non-linear
+#        updates to history, merge conflicts, corruptions, ...) are rolled back
+#        transactionally (and logged).
+#      - The priority at all times is to preserve the integrity of the
+#        enrollment database clone that is currently used by the attestation
+#        endpoint. This will only get swapped out for an updated clone as/when
+#        a successful update completes.
+#    - A simple timeout mechanism is used (for now) to limit the rate at which
+#      updates and clone-rotation occurs.
+#      - This ensures that processing of an attestation request (from an HCP
+#        client) occurs in a clone that is guaranteed not to change for at
+#        least that timeout period.

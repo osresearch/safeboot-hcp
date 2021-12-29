@@ -1,0 +1,14 @@
+# This "caboodle" thing is a little special, relative to the other targets.
+# Like hcp/client, it builds an image for use as a synchronous function, rather
+# than for running asynchronous services like everything else. But unlike
+# client, which provides a synchronous "_run" target to execute a particular
+# script, caboodle's "_run" target runs a bash session (and adds the "-t" flag
+# to the docker-run invocation).
+#
+# It is also special in the way it builds. It concatenates all other (relevant)
+# Dockerfiles together to form a kind of "union" container. The purpose of this
+# is to have an image that can run and which contains within it _all_ of the
+# HCP functionality in one colocated entity. For one thing, this allows a more
+# traditional "single-host" development environment for messing around with
+# scripting, but puts it in one mega container as an alternative to doing it
+# literally on the host.

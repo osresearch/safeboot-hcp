@@ -1,0 +1,43 @@
+# Some summary notes about the enrollment service, a.k.a. "enrollsvc".
+#
+# This service consists of two sub-services; "mgmt" and "repl", which perform
+# complementary functions but operate on common state (a directory bind-mounted
+# into both containers);
+#  * The common state consists of;
+#    - the "enrollment database", currently implemented as a git repository.
+#    - a "msgbus" directory, into which;
+#      - the services write their stdout/stderr,
+#      - control software outside the service containers can write commands to
+#        be picked up by the services. Currently, this is limited to "stop"
+#        functionality, which writes "die" to a file the service is
+#        "tail_wait"ing, triggering it to exit.
+#  * enrollsvc::mgmt provides the enrollment/registration functionality;
+#    - The common state is mounted read-write.
+#    - The enrollment interface is implemented as a flask app.
+#      - API exposed at http[s]://<server>[:port]/v1/{add,query,delete,find}
+#      - A human/interactive web UI lives at http[s]://<server>[:port]/
+#    - Enrollment of a host+ek.pub 2-tuple triggers a (modular, configurable)
+#      asset-generation process, to provision credentials and other host
+#      secrets that are immediately sealed to the enrolled host's TPM and to a
+#      recovery/break-glass credential before insertion into the database.
+#    - The flask app runs as a non-root (FLASK_USER) account in the container.
+#    - The asset-generation and database-write processes run as a different,
+#      non-root (DB_USER) account in the container.
+#    - The flask app handlers invoke the asset-generation and querying
+#      functions via constrained sudo rules, to prevent environment
+#      contamination and limit information-passing to just the command
+#      arguments.
+#  * enrollsvc::repl provides a replication service to downstream attestation
+#    service instances (attestsvc::repl).
+#    - The common state is mounted read-only!
+#    - The replication service uses "git-daemon" directly, running as a
+#      non-root (DB_USER) account in the container.
+#    - Use of the same DB_USER account (as used in the asset-generation
+#      process) is to simplify file-system permissioning (user/group ownership
+#      of database files).
+#      - This does not leak any visibility to the asset-generation process in
+#        the other container, only the database is present/shared/mounted in
+#        both containers.
+#      - The database (directory) is read-only at the mount level, so we don't
+#        need account separation to protect the database from modification by
+#        the replication functionality.

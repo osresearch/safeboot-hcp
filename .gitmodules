@@ -1,20 +1,20 @@
 [submodule "safeboot"]
-	path = safeboot
+	path = ext-safeboot
 	url = ../safeboot.git
 	branch = master
-[submodule "upstream-tools/tpm2-tss"]
-	path = upstream-tools/tpm2-tss
+[submodule "ext-tpmware/tpm2-tss"]
+	path = ext-tpmware/tpm2-tss
 	url = ../tpm2-tss.git
 	branch = master
-[submodule "upstream-tools/tpm2-tools"]
-	path = upstream-tools/tpm2-tools
+[submodule "ext-tpmware/tpm2-tools"]
+	path = ext-tpmware/tpm2-tools
 	url = ../tpm2-tools.git
 	branch = master
-[submodule "upstream-tools/libtpms"]
-	path = upstream-tools/libtpms
+[submodule "ext-tpmware/libtpms"]
+	path = ext-tpmware/libtpms
 	url = ../libtpms.git
 	branch = master
-[submodule "upstream-tools/swtpm"]
-	path = upstream-tools/swtpm
+[submodule "ext-tpmware/swtpm"]
+	path = ext-tpmware/swtpm
 	url = ../swtpm.git
 	branch = master

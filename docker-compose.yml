@@ -1,0 +1,160 @@
+# Persistent state for the services. (enrollsvc and attestsvc are actually two
+# services/containers each - one container mounts the volume read-write and the
+# other mounts it read-only.)
+volumes:
+    enrolldb:
+    attestdb:
+    swtpm:
+    tpmsocket:
+
+networks:
+    hcpnetwork:
+
+# Some notes about the services
+# - The enrollsvc and attestsvc services actually consist of two sub-services,
+#   that perform different functions but operate on the same state, one of them
+#   mounting that state read-only and the other mounting it read-write.
+# - The healthcheck mechanisms used here run on tight intervals in order to
+#   improve the UX for dev and debug. Prod usage would likely reduce the
+#   candence of health-checking. (The time it takes for a service to be
+#   healthchecked as "healthy" is the same as the time _between_ healthchecks.
+#   The dependencies in service start up cause staggering, meaning the time for
+#   a test to run is almost _exactly_ an integer multiple of the healthcheck
+#   interval.)
+# - The lazy-initialization of state is the reason that we have the
+#   "depends_on" relationships and "service_healthy" conditions. And the fact
+#   that the "service_completed_successfully" conditions in the latest spec
+#   isn't available in most distros is the reason we need lazy-initialization.
+# - It is entirely artificial to have all these services running under the same
+#   host with the same docker-compose config. Again, it's a dev+debug thing.
+#   Just in case you were wondering.
+# - We can't use "profiles", because they're too recent in the spec and most
+#   distros have a docker-compose that's too old. Otherwise, we could do;
+#       docker-compose --profile background up -d   # to start background stuff
+#       docker-compose --profile foreground up      # to run tests
+#       docker-compose down -v                      # to clean up
+#   Instead, we have to name the individual services;
+#       docker-compose up -d \
+#               enrollsvc_mgmt enrollsvc_repl \
+#               attestsvc_repl attestsvc_hcp \
+#               swtpmsvc
+#       docker-compose up client
+#       docker-compose down -v
+services:
+
+    ####  The enrollment service
+    enrollsvc_mgmt:
+        image: hcp_enrollsvc:devel
+        command: /hcp/enrollsvc/run_mgmt.sh
+        volumes:
+          - enrolldb:/enrolldb:rw
+          - ./output/creds/enrollsig:/enrollsig:ro
+          - ./output/creds/enrollca:/enrollca:ro
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
+          - DB_USER=db_user
+          - FLASK_USER=flask_user
+          - HCP_RUN_ENROLL_SIGNER=/enrollsig
+          - HCP_RUN_ENROLL_GENCERT=/enrollca
+          - HCP_RUN_ENROLL_REALM=FOO.NOWHERE.XYZ
+        healthcheck:
+            test: curl -f -G http://localhost:5000/ || exit 1
+            timeout: 1s
+            interval: 2s
+    enrollsvc_repl:
+        image: hcp_enrollsvc:devel
+        command: /hcp/enrollsvc/run_repl.sh
+        volumes:
+          - enrolldb:/enrolldb:ro
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
+          - DB_USER=db_user
+          - FLASK_USER=flask_user
+        depends_on:
+            enrollsvc_mgmt:
+                condition: service_healthy
+        healthcheck:
+            test: git ls-remote --heads git://localhost/enrolldb || exit 1
+            timeout: 1s
+            interval: 2s
+
+    ####  The attestation service
+    attestsvc_repl:
+        image: hcp_attestsvc:devel
+        command: /hcp/attestsvc/run_repl.sh
+        volumes:
+          - attestdb:/attestdb:rw
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
+          - HCP_USER=lowlyuser
+          - HCP_ATTESTSVC_REMOTE_REPO=git://enrollsvc_repl/enrolldb
+          - HCP_ATTESTSVC_UPDATE_TIMER=10
+        depends_on:
+            enrollsvc_repl:
+                condition: service_healthy
+        healthcheck:
+            test: test -f /attestdb/initialized && test ! -f /attestdb/transient-failure
+            timeout: 1s
+            interval: 2s
+    attestsvc_hcp:
+        image: hcp_attestsvc:devel
+        command: /hcp/attestsvc/run_hcp.sh
+        volumes:
+          - attestdb:/attestdb:ro
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
+          - HCP_USER=lowlyuser
+        depends_on:
+            attestsvc_repl:
+                condition: service_healthy
+        healthcheck:
+            test: curl -f -G http://localhost:8080/ || exit 1
+            timeout: 1s
+            interval: 2s
+
+    #### The software TPM service
+    swtpmsvc:
+        image: hcp_swtpmsvc:devel
+        command: /hcp/swtpmsvc/run_swtpm.sh
+        volumes:
+          - swtpm:/swtpm
+          - tpmsocket:/tpmsocket
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_SWTPMSVC_STATE_PREFIX=/swtpm
+          - HCP_SWTPMSVC_ENROLL_HOSTNAME=myhost
+          - HCP_SOCKET=/tpmsocket/tpm
+          - HCP_SWTPMSVC_ENROLL_API=http://enrollsvc_mgmt:5000
+        depends_on:
+            enrollsvc_mgmt:
+                condition: service_healthy
+        healthcheck:
+            test: /hcp/swtpmsvc/healthcheck.sh
+            timeout: 1s
+            interval: 2s
+
+    #### The test HCP client
+    client:
+        image: hcp_client:devel
+        command: /hcp/client/run_client.sh
+        volumes:
+          - tpmsocket:/tpmsocket
+          - ./output/creds/enrollverif:/enrollverif:ro
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_CLIENT_ATTEST_URL=http://attestsvc_hcp:8080
+          - HCP_RUN_CLIENT_TPM2TOOLS_TCTI=swtpm:path=/tpmsocket/tpm
+          - HCP_RUN_CLIENT_VERIFIER=/enrollverif
+        depends_on:
+            swtpmsvc:
+                condition: service_healthy
