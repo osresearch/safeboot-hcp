@@ -20,8 +20,8 @@ if [[ -z "$HCP_ATTESTSVC_STATE_PREFIX" || ! -d "$HCP_ATTESTSVC_STATE_PREFIX" ]];
 	echo "Error, HCP_ATTESTSVC_STATE_PREFIX (\"$HCP_ATTESTSVC_STATE_PREFIX\") is not a valid path" >&2
 	exit 1
 fi
-if [[ -z "$HCP_USER" || ! -d "/home/$HCP_USER" ]]; then
-	echo "Error, HCP_USER (\"$HCP_USER\") is not a valid user" >&2
+if [[ ! -d "/home/hcp_user" ]]; then
+	echo "Error, 'hcp_user' account missing or misconfigured" >&2
 	exit 1
 fi
 
@@ -50,7 +50,6 @@ if [[ `whoami` == "root" ]]; then
 	echo "# HCP attestsvc settings, put here so that non-root environments" >> /etc/environment
 	echo "# always get known-good values." >> /etc/environment
 	echo "export HCP_VER=$HCP_VER" >> /etc/environment
-	echo "export HCP_USER=$HCP_USER" >> /etc/environment
 	echo "export HCP_ATTESTSVC_STATE_PREFIX=$HCP_ATTESTSVC_STATE_PREFIX" >> /etc/environment
 	echo "export SAFEBOOT_UWSGI=$SAFEBOOT_UWSGI" >> /etc/environment
 	echo "export SAFEBOOT_UWSGI_FLAGS=$SAFEBOOT_UWSGI_FLAGS" >> /etc/environment
@@ -62,7 +61,6 @@ fi
 # Print the base configuration
 echo "Running '$0'" >&2
 echo "                     HCP_VER=$HCP_VER" >&2
-echo "                    HCP_USER=$HCP_USER" >&2
 echo "  HCP_ATTESTSVC_STATE_PREFIX=$HCP_ATTESTSVC_STATE_PREFIX" >&2
 echo "              SAFEBOOT_UWSGI=$SAFEBOOT_UWSGI" >&2
 echo "        SAFEBOOT_UWSGI_FLAGS=$SAFEBOOT_UWSGI_FLAGS" >&2
@@ -79,12 +77,12 @@ function expect_root {
 }
 
 function expect_hcp_user {
-	if [[ `whoami` != "$HCP_USER" ]]; then
-		echo "Error, running as \"`whoami`\" rather than \"$HCP_USER\"" >&2
+	if [[ `whoami` != "hcp_user" ]]; then
+		echo "Error, running as \"`whoami`\" rather than \"hcp_user\"" >&2
 		exit 1
 	fi
 }
 
 function drop_privs_hcp {
-	su -c "$*" - $HCP_USER
+	su -c "$*" - hcp_user
 }

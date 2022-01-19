@@ -88,7 +88,6 @@ services:
           - hcpnetwork
         environment:
           - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
-          - HCP_USER=lowlyuser
           - HCP_ATTESTSVC_REMOTE_REPO=git://enrollsvc_repl/enrolldb
           - HCP_ATTESTSVC_UPDATE_TIMER=10
         depends_on:
@@ -107,7 +106,6 @@ services:
           - hcpnetwork
         environment:
           - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
-          - HCP_USER=lowlyuser
         depends_on:
             attestsvc_repl:
                 condition: service_healthy

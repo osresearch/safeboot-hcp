@@ -23,7 +23,7 @@ if [[ ! -f $HCP_ATTESTSVC_STATE_PREFIX/initialized ]]; then
 	echo "Warning: state not initialized, initializing now" >&2
 	# This is the one-time init hook, so make sure the mounted dir has
 	# appropriate ownership
-	chown $HCP_USER:$HCP_USER $HCP_ATTESTSVC_STATE_PREFIX
+	chown hcp_user:hcp_user $HCP_ATTESTSVC_STATE_PREFIX
 	drop_privs_hcp /hcp/attestsvc/init_clones.sh
 	touch $HCP_ATTESTSVC_STATE_PREFIX/initialized
 	echo "State now initialized" >&2

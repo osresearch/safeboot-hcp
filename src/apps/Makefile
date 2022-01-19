@@ -73,8 +73,7 @@ $(eval $(call app_add,enrollsvc,$(HCP_APPS_SRC)/enrollsvc/,hcp.Dockerfile))
 # Attestation Service #
 #######################
 
-$(eval $(call app_create,attestsvc,\
-	--build-arg HCP_USER=lowlyuser))
+$(eval $(call app_create,attestsvc,))
 $(eval $(call app_add,attestsvc,$(HCP_APPS_SRC)/attestsvc/,hcp.Dockerfile))
 
 ########################
@@ -98,8 +97,7 @@ $(eval $(call app_add,client,$(HCP_APPS_SRC)/client/,hcp.Dockerfile))
 
 # This is a union of the other apps, plus our own bits
 
-$(eval $(call app_create,caboodle,\
-	--build-arg HCP_USER=lowlyuser))
+$(eval $(call app_create,caboodle,))
 # These dependencies ensure that the "docker build" won't run until the sources
 # for all the component containers are replicated / up-to-date.
 $(HCP_APPS_OUT)/created.caboodle: $(HCP_APPS_OUT)/created.enrollsvc
