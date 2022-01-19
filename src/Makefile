@@ -24,3 +24,6 @@ include $(HCP_SRC)/apps/Makefile
 
 # Produce usable (but test, non-production) credentials
 include $(HCP_SRC)/creds.Makefile
+
+# Define some tests
+include $(HCP_SRC)/tests.Makefile
