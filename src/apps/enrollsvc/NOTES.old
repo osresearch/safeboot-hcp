@@ -22,7 +22,7 @@
 #      recovery/break-glass credential before insertion into the database.
 #    - The flask app runs as a non-root (FLASK_USER) account in the container.
 #    - The asset-generation and database-write processes run as a different,
-#      non-root (DB_USER) account in the container.
+#      non-root (db_user) account in the container.
 #    - The flask app handlers invoke the asset-generation and querying
 #      functions via constrained sudo rules, to prevent environment
 #      contamination and limit information-passing to just the command
@@ -31,8 +31,8 @@
 #    service instances (attestsvc::repl).
 #    - The common state is mounted read-only!
 #    - The replication service uses "git-daemon" directly, running as a
-#      non-root (DB_USER) account in the container.
-#    - Use of the same DB_USER account (as used in the asset-generation
+#      non-root (db_user) account in the container.
+#    - Use of the same db_user account (as used in the asset-generation
 #      process) is to simplify file-system permissioning (user/group ownership
 #      of database files).
 #      - This does not leak any visibility to the asset-generation process in

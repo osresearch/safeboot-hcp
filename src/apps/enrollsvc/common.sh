@@ -1,5 +1,5 @@
 # This file (common.sh) contains definitions required within the git container
-# for operating on the repository, e.g. dropping privs to the DB_USER or
+# for operating on the repository, e.g. dropping privs to the db_user or
 # FLASK_USER, taking and releasing the lockfile, etc. The conventions for the
 # repository's directory layout and the file contents are put in a seperate
 # file, common_defs.sh, which is sourced by this file _and is actually
@@ -26,7 +26,7 @@ set -e
 #
 # So, here's what we do;
 # - "docker run" invocations always run, initially, as root within their
-#   respective containers, before dropping privs to DB_USER (one-time init of
+#   respective containers, before dropping privs to db_user (one-time init of
 #   the database) or FLASK_USER (to start the management interface). I.e. no
 #   use of "--user", "sudo", or "su" in the "docker run" command-line.
 # - We only ever drop privs, we never escalate to root.
@@ -38,7 +38,7 @@ set -e
 #   - when a call is made across a sudo boundary.
 # - No whitelisting or other environment carry-over.
 #
-# NB: because the user accounts (DB_USER and FLASK_USER) are created by
+# NB: because the user accounts (db_user and FLASK_USER) are created by
 # Dockerfile, those values _are_ baked into the container images and get
 # propogated into the initial (root) environment by "ENV" commands in the
 # Dockerfile. HCP_ENROLLSVC_STATE_PREFIX, on the other hand, is specified at
@@ -60,8 +60,8 @@ if [[ -z "$HCP_ENROLLSVC_STATE_PREFIX" || ! -d "$HCP_ENROLLSVC_STATE_PREFIX" ]];
 	echo "Error, HCP_ENROLLSVC_STATE_PREFIX (\"$HCP_ENROLLSVC_STATE_PREFIX\") is not a valid path" >&2
 	exit 1
 fi
-if [[ -z "$DB_USER" || ! -d "/home/$DB_USER" ]]; then
-	echo "Error, DB_USER (\"$DB_USER\") is not a valid user" >&2
+if [[ ! -d "/home/db_user" ]]; then
+	echo "Error, 'db_user' account missing or misconfigured" >&2
 	exit 1
 fi
 if [[ -z "$FLASK_USER" || ! -d "/home/$FLASK_USER" ]]; then
@@ -99,7 +99,6 @@ if [[ `whoami` == "root" ]]; then
 	echo "# HCP enrollsvc settings, put here so that non-root environments" >> /etc/environment
 	echo "# always get known-good values, especially via sudo!" >> /etc/environment
 	echo "export HCP_VER=$HCP_VER" >> /etc/environment
-	echo "export DB_USER=$DB_USER" >> /etc/environment
 	echo "export FLASK_USER=$FLASK_USER" >> /etc/environment
 	echo "export HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >> /etc/environment
 	echo "export HCP_RUN_ENROLL_UWSGI=$HCP_RUN_ENROLL_UWSGI" >> /etc/environment
@@ -115,7 +114,6 @@ fi
 echo "Running '$0'" >&2
 echo "                        HCP_VER=$HCP_VER" >&2
 echo "     HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >&2
-echo "                        DB_USER=$DB_USER" >&2
 echo "                     FLASK_USER=$FLASK_USER" >&2
 echo "                    DB_IN_SETUP=$DB_IN_SETUP" >&2
 echo "          HCP_RUN_ENROLL_SIGNER=$HCP_RUN_ENROLL_SIGNER" >&2
@@ -151,8 +149,8 @@ function expect_root {
 }
 
 function expect_db_user {
-	if [[ `whoami` != "$DB_USER" ]]; then
-		echo "Error, running as \"`whoami`\" rather than \"$DB_USER\"" >&2
+	if [[ `whoami` != "db_user" ]]; then
+		echo "Error, running as \"`whoami`\" rather than \"db_user\"" >&2
 		exit 1
 	fi
 }
@@ -171,7 +169,7 @@ function drop_privs_db {
 	# only applies during one-time initialization whereas the other
 	# settings apply longer term. (The fact this is only used as we drop
 	# from root to non-root also means it's OK.)
-	su --whitelist-environment DB_IN_SETUP -c "$*" - $DB_USER
+	su --whitelist-environment DB_IN_SETUP -c "$*" - db_user
 }
 
 function drop_privs_flask {

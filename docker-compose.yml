@@ -54,7 +54,6 @@ services:
           - hcpnetwork
         environment:
           - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
-          - DB_USER=db_user
           - FLASK_USER=flask_user
           - HCP_RUN_ENROLL_SIGNER=/enrollsig
           - HCP_RUN_ENROLL_GENCERT=/enrollca
@@ -72,7 +71,6 @@ services:
           - hcpnetwork
         environment:
           - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
-          - DB_USER=db_user
           - FLASK_USER=flask_user
         depends_on:
             enrollsvc_mgmt:

@@ -59,7 +59,7 @@ def home():
 # account, which has no direct access to any enrollment state. Specific sudo
 # rules allow the $FLASK_USER to invoke the 4 /hcp/enrollsvc/op_<verb>.sh
 # scripts (for <verb> in "add", "query", "delete", and "find") running as
-# $DB_USER. The latter is the account that created the enrollment DB for use
+# 'db_user'. The latter is the account that created the enrollment DB for use
 # only by itself.  The primary role of the /hcp/enrollsvc/op_<verb>.sh scripts
 # is to perform argument-validation, to mitigate the risk of a compromised
 # flask app. (The sudo configuration ensures a fresh environment across this
@@ -68,7 +68,7 @@ def home():
 #
 # This is the sudo preamble to pass to subprocess.run(), the actual script name
 # and arguments follow this, and are appended by each handler.
-sudoargs=['sudo','-u',os.environ.get('DB_USER')]
+sudoargs=['sudo','-u','db_user']
 
 @app.route('/v1/add', methods=['POST'])
 def my_add():

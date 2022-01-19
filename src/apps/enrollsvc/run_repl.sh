@@ -43,5 +43,5 @@ TO_RUN="$GITDAEMON \
 	$GITDAEMON_FLAGS \
 	$REPO_PATH"
 
-echo "Running (as $DB_USER): $TO_RUN"
+echo "Running (as db_user): $TO_RUN"
 drop_privs_db $TO_RUN

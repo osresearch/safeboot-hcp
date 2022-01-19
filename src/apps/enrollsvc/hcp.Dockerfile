@@ -8,9 +8,7 @@ RUN apt-get install -y dnsutils
 # visible here but are worth knowing about. See common.sh for the gritty
 # details.
 
-ARG DB_USER
-RUN useradd -m -s /bin/bash $DB_USER
-ENV DB_USER=$DB_USER
+RUN useradd -m -s /bin/bash db_user
 
 ARG FLASK_USER
 RUN useradd -m -s /bin/bash $FLASK_USER
@@ -21,13 +19,13 @@ COPY enrollsvc/*.sh enrollsvc/*.py /hcp/enrollsvc/
 RUN chmod 755 /hcp/enrollsvc/*.sh /hcp/enrollsvc/*.py
 
 # The following puts a sudo configuration into place for FLASK_USER to be able
-# to invoke (only) the 4 /hcp/op_<verb>.sh scripts as DB_USER.
+# to invoke (only) the 4 /hcp/op_<verb>.sh scripts as db_user.
 
 RUN echo "# sudo rules for enrollsvc-mgmt" > /etc/sudoers.d/hcp
 RUN echo "Cmnd_Alias HCP = /hcp/enrollsvc/op_add.sh,/hcp/enrollsvc/op_delete.sh,/hcp/enrollsvc/op_find.sh,/hcp/enrollsvc/op_query.sh" >> /etc/sudoers.d/hcp
 RUN echo "Defaults !lecture" >> /etc/sudoers.d/hcp
 RUN echo "Defaults !authenticate" >> /etc/sudoers.d/hcp
-RUN echo "$FLASK_USER ALL = ($DB_USER) HCP" >> /etc/sudoers.d/hcp
+RUN echo "$FLASK_USER ALL = (db_user) HCP" >> /etc/sudoers.d/hcp
 
 # We have constraints to support older Debian versions whose 'git' packages
 # assume "master" as a default branch name and don't honor attempts to override
@@ -50,5 +48,5 @@ RUN git config --system init.defaultBranch master
 # for more than backup/restore purposes, perhaps the identity in the commits is
 # used to disambiguate them?)
 
-RUN su -c "git config --global user.email 'do-not-reply@nowhere.special'" - $DB_USER
-RUN su -c "git config --global user.name 'Host Cryptographic Provisioning (HCP)'" - $DB_USER
+RUN su -c "git config --global user.email 'do-not-reply@nowhere.special'" - db_user
+RUN su -c "git config --global user.name 'Host Cryptographic Provisioning (HCP)'" - db_user

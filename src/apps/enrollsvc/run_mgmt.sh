@@ -15,7 +15,7 @@
 		echo "Warning: state not initialized, initializing now" >&2
 		# This is the one-time init hook, so make sure the mounted dir
 		# has appropriate ownership
-		chown $DB_USER:$DB_USER $HCP_ENROLLSVC_STATE_PREFIX
+		chown db_user:db_user $HCP_ENROLLSVC_STATE_PREFIX
 		drop_privs_db /hcp/enrollsvc/init_repo.sh
 		touch $HCP_ENROLLSVC_STATE_PREFIX/initialized
 		echo "State now initialized" >&2
@@ -36,7 +36,7 @@ expect_root
 	exit 1) || exit 1
 
 # Persistent credentials are mounted but ownership is for root, naturally. We
-# need them accessible to $DB_USER. Easiest is to copy the directory to the
+# need them accessible to db_user. Easiest is to copy the directory to the
 # user's home dir (which isn't persistent, so we can do this on each startup).
 
 if [[ -z "$HCP_RUN_ENROLL_SIGNER" || ! -d "$HCP_RUN_ENROLL_SIGNER" ]]; then
@@ -48,14 +48,14 @@ if [[ -z "$HCP_RUN_ENROLL_GENCERT" || ! -d "$HCP_RUN_ENROLL_GENCERT" ]]; then
 	exit 1
 fi
 
-cp -r $HCP_RUN_ENROLL_SIGNER /home/$DB_USER/enrollsig
-cp -r $HCP_RUN_ENROLL_GENCERT /home/$DB_USER/enrollca
+cp -r $HCP_RUN_ENROLL_SIGNER /home/db_user/enrollsig
+cp -r $HCP_RUN_ENROLL_GENCERT /home/db_user/enrollca
 
-export HCP_RUN_ENROLL_SIGNER=/home/$DB_USER/enrollsig
-export HCP_RUN_ENROLL_GENCERT=/home/$DB_USER/enrollca
+export HCP_RUN_ENROLL_SIGNER=/home/db_user/enrollsig
+export HCP_RUN_ENROLL_GENCERT=/home/db_user/enrollca
 
-chown -R $DB_USER $HCP_RUN_ENROLL_SIGNER
-chown -R $DB_USER $HCP_RUN_ENROLL_GENCERT
+chown -R db_user $HCP_RUN_ENROLL_SIGNER
+chown -R db_user $HCP_RUN_ENROLL_GENCERT
 
 export SIGNING_KEY_PUB=$HCP_RUN_ENROLL_SIGNER/key.pem
 export SIGNING_KEY_PRIV=$HCP_RUN_ENROLL_SIGNER/key.priv
