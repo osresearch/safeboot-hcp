@@ -100,12 +100,12 @@ if [[ `whoami` == "root" ]]; then
 	echo "# always get known-good values, especially via sudo!" >> /etc/environment
 	echo "export HCP_VER=$HCP_VER" >> /etc/environment
 	echo "export HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >> /etc/environment
-	echo "export HCP_RUN_ENROLL_UWSGI=$HCP_RUN_ENROLL_UWSGI" >> /etc/environment
-	echo "export HCP_RUN_ENROLL_UWSGI_PORT=$HCP_RUN_ENROLL_UWSGI_PORT" >> /etc/environment
-	echo "export HCP_RUN_ENROLL_UWSGI_FLAGS=$HCP_RUN_ENROLL_UWSGI_FLAGS" >> /etc/environment
-	echo "export HCP_RUN_ENROLL_UWSGI_OPTIONS=$HCP_RUN_ENROLL_UWSGI_OPTIONS" >> /etc/environment
-	echo "export HCP_RUN_ENROLL_GITDAEMON=$HCP_RUN_ENROLL_GITDAEMON" >> /etc/environment
-	echo "export HCP_RUN_ENROLL_GITDAEMON_FLAGS=$HCP_RUN_ENROLL_GITDAEMON_FLAGS" >> /etc/environment
+	echo "export HCP_ENROLLSVC_UWSGI=$HCP_ENROLLSVC_UWSGI" >> /etc/environment
+	echo "export HCP_ENROLLSVC_UWSGI_PORT=$HCP_ENROLLSVC_UWSGI_PORT" >> /etc/environment
+	echo "export HCP_ENROLLSVC_UWSGI_FLAGS=$HCP_ENROLLSVC_UWSGI_FLAGS" >> /etc/environment
+	echo "export HCP_ENROLLSVC_UWSGI_OPTIONS=$HCP_ENROLLSVC_UWSGI_OPTIONS" >> /etc/environment
+	echo "export HCP_ENROLLSVC_GITDAEMON=$HCP_ENROLLSVC_GITDAEMON" >> /etc/environment
+	echo "export HCP_ENROLLSVC_GITDAEMON_FLAGS=$HCP_ENROLLSVC_GITDAEMON_FLAGS" >> /etc/environment
 	echo "export HCP_ENVIRONMENT_SET=1" >> /etc/environment
 fi
 
@@ -114,14 +114,14 @@ echo "Running '$0'" >&2
 echo "                        HCP_VER=$HCP_VER" >&2
 echo "     HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >&2
 echo "                    DB_IN_SETUP=$DB_IN_SETUP" >&2
-echo "          HCP_RUN_ENROLL_SIGNER=$HCP_RUN_ENROLL_SIGNER" >&2
-echo "         HCP_RUN_ENROLL_GENCERT=$HCP_RUN_ENROLL_GENCERT" >&2
-echo "           HCP_RUN_ENROLL_UWSGI=$HCP_RUN_ENROLL_UWSGI" >&2
-echo "      HCP_RUN_ENROLL_UWSGI_PORT=$HCP_RUN_ENROLL_UWSGI_PORT" >&2
-echo "     HCP_RUN_ENROLL_UWSGI_FLAGS=$HCP_RUN_ENROLL_UWSGI_FLAGS" >&2
-echo "   HCP_RUN_ENROLL_UWSGI_OPTIONS=$HCP_RUN_ENROLL_UWSGI_OPTIONS" >&2
-echo "       HCP_RUN_ENROLL_GITDAEMON=$HCP_RUN_ENROLL_GITDAEMON" >&2
-echo " HCP_RUN_ENROLL_GITDAEMON_FLAGS=$HCP_RUN_ENROLL_GITDAEMON_FLAGS" >&2
+echo "           HCP_ENROLLSVC_SIGNER=$HCP_ENROLLSVC_SIGNER" >&2
+echo "          HCP_ENROLLSVC_GENCERT=$HCP_ENROLLSVC_GENCERT" >&2
+echo "            HCP_ENROLLSVC_UWSGI=$HCP_ENROLLSVC_UWSGI" >&2
+echo "       HCP_ENROLLSVC_UWSGI_PORT=$HCP_ENROLLSVC_UWSGI_PORT" >&2
+echo "      HCP_ENROLLSVC_UWSGI_FLAGS=$HCP_ENROLLSVC_UWSGI_FLAGS" >&2
+echo "    HCP_ENROLLSVC_UWSGI_OPTIONS=$HCP_ENROLLSVC_UWSGI_OPTIONS" >&2
+echo "        HCP_ENROLLSVC_GITDAEMON=$HCP_ENROLLSVC_GITDAEMON" >&2
+echo "  HCP_ENROLLSVC_GITDAEMON_FLAGS=$HCP_ENROLLSVC_GITDAEMON_FLAGS" >&2
 
 # Derive more configuration using these constants
 REPO_NAME=enrolldb.git

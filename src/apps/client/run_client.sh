@@ -5,25 +5,25 @@ set -e
 # Print the base configuration
 echo "Running '$0'"
 echo "         HCP_CLIENT_ATTEST_URL=$HCP_CLIENT_ATTEST_URL"
-echo " HCP_RUN_CLIENT_TPM2TOOLS_TCTI=$HCP_RUN_CLIENT_TPM2TOOLS_TCTI"
-echo "       HCP_RUN_CLIENT_VERIFIER=$HCP_RUN_CLIENT_VERIFIER"
+echo "     HCP_CLIENT_TPM2TOOLS_TCTI=$HCP_CLIENT_TPM2TOOLS_TCTI"
+echo "           HCP_CLIENT_VERIFIER=$HCP_CLIENT_VERIFIER"
 
 if [[ -z "$HCP_CLIENT_ATTEST_URL" ]]; then
 	echo "Error, HCP_CLIENT_ATTEST_URL (\"$HCP_CLIENT_ATTEST_URL\") is not set"
 	exit 1
 fi
-if [[ -z "$HCP_RUN_CLIENT_TPM2TOOLS_TCTI" ]]; then
-	echo "Error, HCP_RUN_CLIENT_TPM2TOOLS_TCTI (\"$HCP_RUN_CLIENT_TPM2TOOLS_TCTI\") is not set"
+if [[ -z "$HCP_CLIENT_TPM2TOOLS_TCTI" ]]; then
+	echo "Error, HCP_CLIENT_TPM2TOOLS_TCTI (\"$HCP_CLIENT_TPM2TOOLS_TCTI\") is not set"
 	exit 1
 fi
-export TPM2TOOLS_TCTI=$HCP_RUN_CLIENT_TPM2TOOLS_TCTI
-if [[ -z "$HCP_RUN_CLIENT_VERIFIER" || ! -d "$HCP_RUN_CLIENT_VERIFIER" ]]; then
-	echo "Error, HCP_RUN_CLIENT_VERIFIER (\"$HCP_RUN_CLIENT_VERIFIER\") is not a valid directory" >&2
+export TPM2TOOLS_TCTI=$HCP_CLIENT_TPM2TOOLS_TCTI
+if [[ -z "$HCP_CLIENT_VERIFIER" || ! -d "$HCP_CLIENT_VERIFIER" ]]; then
+	echo "Error, HCP_CLIENT_VERIFIER (\"$HCP_CLIENT_VERIFIER\") is not a valid directory" >&2
 	exit 1
 fi
-export ENROLL_SIGN_ANCHOR=$HCP_RUN_CLIENT_VERIFIER/key.pem
+export ENROLL_SIGN_ANCHOR=$HCP_CLIENT_VERIFIER/key.pem
 if [[ ! -f "$ENROLL_SIGN_ANCHOR" ]]; then
-	echo "Error, HCP_RUN_CLIENT_VERIFIER does not contain key.pem" >&2
+	echo "Error, HCP_CLIENT_VERIFIER does not contain key.pem" >&2
 	exit 1
 fi
 
@@ -54,7 +54,7 @@ export DIR=/safeboot
 cd $DIR
 
 # passed in from "docker run" cmd-line
-export HCP_RUN_CLIENT_TPM2TOOLS_TCTI
+export HCP_CLIENT_TPM2TOOLS_TCTI
 export HCP_CLIENT_ATTEST_URL
 
 echo "Running 'client'"

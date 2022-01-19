@@ -27,8 +27,7 @@ endif
 #   or one that is specified explicitly, etc).
 # - This baseline container image also gets used as a "utility" container, used
 #   particularly when needing to run cleanup shell-commands and "any image will
-#   do". NB: this should be kept synchronized with
-#   hcp/run/direct.mk::HCP_RUN_UTIL_IMAGE
+#   do".
 HCP_BASE ?= debian:bullseye-slim
 #HCP_BASE ?= internal.dockerhub.mycompany.com/library/debian:buster-slim
 

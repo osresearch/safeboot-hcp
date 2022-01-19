@@ -54,9 +54,9 @@ services:
           - hcpnetwork
         environment:
           - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
-          - HCP_RUN_ENROLL_SIGNER=/enrollsig
-          - HCP_RUN_ENROLL_GENCERT=/enrollca
-          - HCP_RUN_ENROLL_REALM=FOO.NOWHERE.XYZ
+          - HCP_ENROLLSVC_SIGNER=/enrollsig
+          - HCP_ENROLLSVC_GENCERT=/enrollca
+          - HCP_ENROLLSVC_REALM=FOO.NOWHERE.XYZ
         healthcheck:
             test: curl -f -G http://localhost:5000/ || exit 1
             timeout: 1s
@@ -147,8 +147,8 @@ services:
           - hcpnetwork
         environment:
           - HCP_CLIENT_ATTEST_URL=http://attestsvc_hcp:8080
-          - HCP_RUN_CLIENT_TPM2TOOLS_TCTI=swtpm:path=/tpmsocket/tpm
-          - HCP_RUN_CLIENT_VERIFIER=/enrollverif
+          - HCP_CLIENT_TPM2TOOLS_TCTI=swtpm:path=/tpmsocket/tpm
+          - HCP_CLIENT_VERIFIER=/enrollverif
         depends_on:
             swtpmsvc:
                 condition: service_healthy
