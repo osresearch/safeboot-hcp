@@ -1,6 +1,6 @@
 # This file (common.sh) contains definitions required within the git container
 # for operating on the repository, e.g. dropping privs to the db_user or
-# FLASK_USER, taking and releasing the lockfile, etc. The conventions for the
+# flask_user, taking and releasing the lockfile, etc. The conventions for the
 # repository's directory layout and the file contents are put in a seperate
 # file, common_defs.sh, which is sourced by this file _and is actually
 # committed to the repo itself_. This is so that common_def.s is replicated to
@@ -27,7 +27,7 @@ set -e
 # So, here's what we do;
 # - "docker run" invocations always run, initially, as root within their
 #   respective containers, before dropping privs to db_user (one-time init of
-#   the database) or FLASK_USER (to start the management interface). I.e. no
+#   the database) or flask_user (to start the management interface). I.e. no
 #   use of "--user", "sudo", or "su" in the "docker run" command-line.
 # - We only ever drop privs, we never escalate to root.
 # - Instance configuration is passed in as "--env" arguments to "docker run".
@@ -38,7 +38,7 @@ set -e
 #   - when a call is made across a sudo boundary.
 # - No whitelisting or other environment carry-over.
 #
-# NB: because the user accounts (db_user and FLASK_USER) are created by
+# NB: because the user accounts (db_user and flask_user) are created by
 # Dockerfile, those values _are_ baked into the container images and get
 # propogated into the initial (root) environment by "ENV" commands in the
 # Dockerfile. HCP_ENROLLSVC_STATE_PREFIX, on the other hand, is specified at
@@ -64,8 +64,8 @@ if [[ ! -d "/home/db_user" ]]; then
 	echo "Error, 'db_user' account missing or misconfigured" >&2
 	exit 1
 fi
-if [[ -z "$FLASK_USER" || ! -d "/home/$FLASK_USER" ]]; then
-	echo "Error, FLASK_USER (\"$FLASK_USER\") is not a valid user" >&2
+if [[ ! -d "/home/flask_user" ]]; then
+	echo "Error, 'flask_user' account missing or misconfigured" >&2
 	exit 1
 fi
 
@@ -99,7 +99,6 @@ if [[ `whoami` == "root" ]]; then
 	echo "# HCP enrollsvc settings, put here so that non-root environments" >> /etc/environment
 	echo "# always get known-good values, especially via sudo!" >> /etc/environment
 	echo "export HCP_VER=$HCP_VER" >> /etc/environment
-	echo "export FLASK_USER=$FLASK_USER" >> /etc/environment
 	echo "export HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >> /etc/environment
 	echo "export HCP_RUN_ENROLL_UWSGI=$HCP_RUN_ENROLL_UWSGI" >> /etc/environment
 	echo "export HCP_RUN_ENROLL_UWSGI_PORT=$HCP_RUN_ENROLL_UWSGI_PORT" >> /etc/environment
@@ -114,7 +113,6 @@ fi
 echo "Running '$0'" >&2
 echo "                        HCP_VER=$HCP_VER" >&2
 echo "     HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >&2
-echo "                     FLASK_USER=$FLASK_USER" >&2
 echo "                    DB_IN_SETUP=$DB_IN_SETUP" >&2
 echo "          HCP_RUN_ENROLL_SIGNER=$HCP_RUN_ENROLL_SIGNER" >&2
 echo "         HCP_RUN_ENROLL_GENCERT=$HCP_RUN_ENROLL_GENCERT" >&2
@@ -156,8 +154,8 @@ function expect_db_user {
 }
 
 function expect_flask_user {
-	if [[ `whoami` != "$FLASK_USER" ]]; then
-		echo "Error, running as \"`whoami`\" rather than \"$FLASK_USER\"" >&2
+	if [[ `whoami` != "flask_user" ]]; then
+		echo "Error, running as \"`whoami`\" rather than \"flask_user\"" >&2
 		exit 1
 	fi
 }
@@ -173,7 +171,7 @@ function drop_privs_db {
 }
 
 function drop_privs_flask {
-	su -c "$*" - $FLASK_USER
+	su -c "$*" - flask_user
 }
 
 function repo_cmd_lock {

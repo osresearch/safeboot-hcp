@@ -66,8 +66,7 @@ HCP_APPS_BASE_TOUCH := $(HCP_APPS_OUT)/created.common
 # Enrollment Service #
 ######################
 
-$(eval $(call app_create,enrollsvc,\
-	--build-arg FLASK_USER=flask_user))
+$(eval $(call app_create,enrollsvc,))
 $(eval $(call app_add,enrollsvc,$(HCP_APPS_SRC)/enrollsvc/,hcp.Dockerfile))
 
 #######################
@@ -100,7 +99,6 @@ $(eval $(call app_add,client,$(HCP_APPS_SRC)/client/,hcp.Dockerfile))
 # This is a union of the other apps, plus our own bits
 
 $(eval $(call app_create,caboodle,\
-	--build-arg FLASK_USER=flask_user \
 	--build-arg HCP_USER=lowlyuser))
 # These dependencies ensure that the "docker build" won't run until the sources
 # for all the component containers are replicated / up-to-date.

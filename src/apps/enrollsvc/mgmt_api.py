@@ -55,9 +55,9 @@ def home():
 <a href="/v1/get-asset-signer">Click here</a>
 '''
 
-# We enforce privilege separation by running this flask app as the $FLASK_USER
+# We enforce privilege separation by running this flask app as the flask_user
 # account, which has no direct access to any enrollment state. Specific sudo
-# rules allow the $FLASK_USER to invoke the 4 /hcp/enrollsvc/op_<verb>.sh
+# rules allow flask_user to invoke the 4 /hcp/enrollsvc/op_<verb>.sh
 # scripts (for <verb> in "add", "query", "delete", and "find") running as
 # 'db_user'. The latter is the account that created the enrollment DB for use
 # only by itself.  The primary role of the /hcp/enrollsvc/op_<verb>.sh scripts

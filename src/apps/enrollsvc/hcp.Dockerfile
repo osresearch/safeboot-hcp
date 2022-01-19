@@ -9,23 +9,20 @@ RUN apt-get install -y dnsutils
 # details.
 
 RUN useradd -m -s /bin/bash db_user
-
-ARG FLASK_USER
-RUN useradd -m -s /bin/bash $FLASK_USER
-ENV FLASK_USER=$FLASK_USER
+RUN useradd -m -s /bin/bash flask_user
 
 RUN mkdir -p /hcp/enrollsvc
 COPY enrollsvc/*.sh enrollsvc/*.py /hcp/enrollsvc/
 RUN chmod 755 /hcp/enrollsvc/*.sh /hcp/enrollsvc/*.py
 
-# The following puts a sudo configuration into place for FLASK_USER to be able
+# The following puts a sudo configuration into place for flask_user to be able
 # to invoke (only) the 4 /hcp/op_<verb>.sh scripts as db_user.
 
 RUN echo "# sudo rules for enrollsvc-mgmt" > /etc/sudoers.d/hcp
 RUN echo "Cmnd_Alias HCP = /hcp/enrollsvc/op_add.sh,/hcp/enrollsvc/op_delete.sh,/hcp/enrollsvc/op_find.sh,/hcp/enrollsvc/op_query.sh" >> /etc/sudoers.d/hcp
 RUN echo "Defaults !lecture" >> /etc/sudoers.d/hcp
 RUN echo "Defaults !authenticate" >> /etc/sudoers.d/hcp
-RUN echo "$FLASK_USER ALL = (db_user) HCP" >> /etc/sudoers.d/hcp
+RUN echo "flask_user ALL = (db_user) HCP" >> /etc/sudoers.d/hcp
 
 # We have constraints to support older Debian versions whose 'git' packages
 # assume "master" as a default branch name and don't honor attempts to override

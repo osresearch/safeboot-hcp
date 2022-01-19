@@ -20,7 +20,7 @@
 #      asset-generation process, to provision credentials and other host
 #      secrets that are immediately sealed to the enrolled host's TPM and to a
 #      recovery/break-glass credential before insertion into the database.
-#    - The flask app runs as a non-root (FLASK_USER) account in the container.
+#    - The flask app runs as a non-root (flask_user) account in the container.
 #    - The asset-generation and database-write processes run as a different,
 #      non-root (db_user) account in the container.
 #    - The flask app handlers invoke the asset-generation and querying
