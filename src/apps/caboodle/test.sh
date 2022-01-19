@@ -12,17 +12,23 @@ set -e
 #    instead.
 
 # HCP Enrollment Service.
+echo "Starting enrollsvc::run_mgmt.sh"
 /hcp/enrollsvc/run_mgmt.sh > emgmt.stdout 2> emgmt.stderr &
 sleep 1
+echo "Starting enrollsvc::run_repl.sh"
 /hcp/enrollsvc/run_repl.sh > erepl.stdout 2> erepl.stderr &
 sleep 1
 
+echo "Starting attestsvc::run_repl.sh"
 /hcp/attestsvc/run_repl.sh > arepl.stdout 2> arepl.stderr &
 sleep 1
+echo "Starting attestsvc::run_hcp.sh"
 /hcp/attestsvc/run_hcp.sh > ahcp.stdout 2> ahcp.stderr &
 sleep 1
 
+echo "Starting swtpmsvc::run_swtpm.sh"
 /hcp/swtpmsvc/run_swtpm.sh > swtpm.stdout 2> swtpm.stderr &
 sleep 5
 
+echo "Starting client::run_client.sh"
 /hcp/client/run_client.sh
