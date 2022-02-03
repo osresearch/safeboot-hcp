@@ -11,6 +11,7 @@ test_services: $(HCP_APPS_OUT)/created.enrollsvc
 test_services: $(HCP_APPS_OUT)/created.attestsvc
 test_services: $(HCP_APPS_OUT)/created.swtpmsvc
 test_services: $(HCP_APPS_OUT)/created.client
+test_services: $(HCP_CREDS_DONE)
 test_services:
 	$Qecho "Starting services test"
 	$Qdocker-compose up -d \
