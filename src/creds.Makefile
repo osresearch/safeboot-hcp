@@ -31,6 +31,7 @@ $(HCP_CREDS_OUT)/done.enrollsig: $(HCP_CREDS_OUT)/reference
 $(HCP_CREDS_OUT)/done.enrollsig:
 	$Q$(HCP_CREDS_DOCKER_RUN) "$(CMD_CREDS_ENROLLSIG)"
 	$Qtouch $@
+HCP_CREDS_DONE += $(HCP_CREDS_OUT)/done.enrollsig
 
 # "enrollverif" - this is simply the public-only half of enrollsig
 HCP_CREDS_ENROLLVERIF := $(HCP_CREDS_OUT)/enrollverif
@@ -41,6 +42,7 @@ $(HCP_CREDS_OUT)/done.enrollverif: $(HCP_CREDS_OUT)/done.enrollsig
 $(HCP_CREDS_OUT)/done.enrollverif:
 	$Qcp $(HCP_CREDS_ENROLLSIG)/key.pem $(HCP_CREDS_ENROLLVERIF)/
 	$Qtouch $@
+HCP_CREDS_DONE += $(HCP_CREDS_OUT)/done.enrollverif
 
 # "enrollca"
 HCP_CREDS_ENROLLCA := $(HCP_CREDS_OUT)/enrollca
@@ -55,6 +57,7 @@ $(HCP_CREDS_OUT)/done.enrollca: $(HCP_CREDS_OUT)/reference
 $(HCP_CREDS_OUT)/done.enrollca:
 	$Q$(HCP_CREDS_DOCKER_RUN) "$(CMD_CREDS_ENROLLCA)"
 	$Qtouch $@
+HCP_CREDS_DONE += $(HCP_CREDS_OUT)/done.enrollca
 
 # A wrapper target to package creds
 creds: $(HCP_CREDS_OUT)/done.enrollsig
@@ -69,7 +72,7 @@ clean_creds:
 	$Qrm -rf $(HCP_CREDS_ENROLLSIG)
 	$Qrm -rf $(HCP_CREDS_ENROLLCA)
 	$Qrm -rf $(HCP_CREDS_ENROLLVERIF)
-	$Qrm -f $(HCP_CREDS_OUT)/done.*
+	$Qrm -f $(HCP_CREDS_DONE)
 	$Qrmdir $(HCP_CREDS_OUT)
 # Cleanup ordering
 clean: clean_creds
