@@ -92,12 +92,14 @@ def my_add():
     c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_add.sh', p, h],
                        stdout = subprocess.PIPE, stderr = subprocess.PIPE,
                        text = True)
-    print(c.stdout)
     if c.returncode != 0:
+        # stderr is for debugging
+        # stdout is for the user (hint: don't leak sensitive info to stdout!)
         print("Failed operation, dumping stderr")
         print(c.stderr, file = sys.stderr)
         return {
-                    "returncode": c.returncode
+                    "returncode": c.returncode,
+                    "txt": c.stdout
         }
     j = json.loads(c.stdout)
     return j
