@@ -51,10 +51,10 @@ if [[ `whoami` == "root" ]]; then
 	echo "# always get known-good values." >> /etc/environment
 	echo "export HCP_VER=$HCP_VER" >> /etc/environment
 	echo "export HCP_ATTESTSVC_STATE_PREFIX=$HCP_ATTESTSVC_STATE_PREFIX" >> /etc/environment
-	echo "export SAFEBOOT_UWSGI=$SAFEBOOT_UWSGI" >> /etc/environment
-	echo "export SAFEBOOT_UWSGI_FLAGS=$SAFEBOOT_UWSGI_FLAGS" >> /etc/environment
-	echo "export SAFEBOOT_UWSGI_PORT=$SAFEBOOT_UWSGI_PORT" >> /etc/environment
-	echo "export SAFEBOOT_UWSGI_OPTIONS=$SAFEBOOT_UWSGI_OPTIONS" >> /etc/environment
+	echo "export HCP_ATTESTSVC_UWSGI=$HCP_ATTESTSVC_UWSGI" >> /etc/environment
+	echo "export HCP_ATTESTSVC_UWSGI_FLAGS=$HCP_ATTESTSVC_UWSGI_FLAGS" >> /etc/environment
+	echo "export HCP_ATTESTSVC_UWSGI_PORT=$HCP_ATTESTSVC_UWSGI_PORT" >> /etc/environment
+	echo "export HCP_ATTESTSVC_UWSGI_OPTIONS=$HCP_ATTESTSVC_UWSGI_OPTIONS" >> /etc/environment
 	echo "export HCP_ENVIRONMENT_SET=1" >> /etc/environment
 fi
 
@@ -62,10 +62,10 @@ fi
 echo "Running '$0'" >&2
 echo "                     HCP_VER=$HCP_VER" >&2
 echo "  HCP_ATTESTSVC_STATE_PREFIX=$HCP_ATTESTSVC_STATE_PREFIX" >&2
-echo "              SAFEBOOT_UWSGI=$SAFEBOOT_UWSGI" >&2
-echo "        SAFEBOOT_UWSGI_FLAGS=$SAFEBOOT_UWSGI_FLAGS" >&2
-echo "         SAFEBOOT_UWSGI_PORT=$SAFEBOOT_UWSGI_PORT" >&2
-echo "      SAFEBOOT_UWSGI_OPTIONS=$SAFEBOOT_UWSGI_OPTIONS" >&2
+echo "         HCP_ATTESTSVC_UWSGI=$HCP_ATTESTSVC_UWSGI" >&2
+echo "   HCP_ATTESTSVC_UWSGI_FLAGS=$HCP_ATTESTSVC_UWSGI_FLAGS" >&2
+echo "    HCP_ATTESTSVC_UWSGI_PORT=$HCP_ATTESTSVC_UWSGI_PORT" >&2
+echo " HCP_ATTESTSVC_UWSGI_OPTIONS=$HCP_ATTESTSVC_UWSGI_OPTIONS" >&2
 
 # Basic functions
 

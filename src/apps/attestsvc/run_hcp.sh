@@ -24,4 +24,4 @@ fi
 
 echo "Running 'attestsvc-hcp' service"
 
-drop_privs_hcp /hcp/attestsvc/wrapper-attest-server.sh
+drop_privs_hcp /hcp/attestsvc/flask_wrapper.sh
