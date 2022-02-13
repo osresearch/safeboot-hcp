@@ -9,6 +9,11 @@ RUN apt-get install -y openssl procps iproute2 iputils-ping curl wget acl lsof
 # built from source in the hcp/submodules layer, later on.)
 HCP_BASE_4PLATFORM_TPM2_TOOLS
 
-# If xtra ("make yourself at home" stuff) packages are requested, this marker also gets
-# replaced with an "apt-get install -y [...]" line, otherwise stubbed out.
+# If xtra ("make yourself at home" stuff) packages are requested, this marker
+# also gets replaced with an "apt-get install -y [...]" line, otherwise stubbed
+# out.
 HCP_BASE_4PLATFORM_XTRA
+
+RUN mkdir -p /hcp/base
+COPY chowner.sh /hcp/base/
+RUN chmod 755 /hcp/base/chowner.sh

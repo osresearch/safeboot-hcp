@@ -206,9 +206,11 @@ else
 $(HCP_BASE_OUT)/4platform.built: $(HCP_BASE_OUT)/2apt-usable.built
 endif
 $(HCP_BASE_OUT)/4platform.built: $(HCP_BASE_OUT)/4platform.Dockerfile
+$(HCP_BASE_OUT)/4platform.built: $(HCP_BASE_SRC)/4platform-context/chowner.sh
 $(HCP_BASE_OUT)/4platform.built:
-	$Qcat $(HCP_BASE_OUT)/4platform.Dockerfile | \
-		docker build -t $(HCP_BASE4_DNAME) -
+	$Qdocker build -t $(HCP_BASE4_DNAME) \
+		-f $(HCP_BASE_OUT)/4platform.Dockerfile \
+		$(HCP_BASE_SRC)/4platform-context/
 	$Qtouch $@
 
 # Cleanup
