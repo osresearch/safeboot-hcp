@@ -16,7 +16,7 @@ HCP_CREDS_DOCKER_RUN := \
 $(HCP_CREDS_OUT)/reference: | $(HCP_OUT)
 	$Qecho "Unused file" > "$@"
 
-CMD_CREDS_CHOWN := chown --reference /creds/reference
+CMD_CREDS_CHOWN := /hcp/base/chowner.sh /creds/reference .
 
 # "enrollsig"
 HCP_CREDS_ENROLLSIG := $(HCP_CREDS_OUT)/enrollsig
@@ -25,7 +25,7 @@ MDIRS += $(HCP_CREDS_ENROLLSIG)
 CMD_CREDS_ENROLLSIG := cd /creds/enrollsig &&
 CMD_CREDS_ENROLLSIG += openssl genrsa -out key.priv &&
 CMD_CREDS_ENROLLSIG += openssl rsa -pubout -in key.priv -out key.pem &&
-CMD_CREDS_ENROLLSIG += $(CMD_CREDS_CHOWN) key.priv key.pem
+CMD_CREDS_ENROLLSIG += $(CMD_CREDS_CHOWN)
 $(HCP_CREDS_OUT)/done.enrollsig: | $(HCP_CREDS_ENROLLSIG)
 $(HCP_CREDS_OUT)/done.enrollsig: $(HCP_CREDS_OUT)/reference
 $(HCP_CREDS_OUT)/done.enrollsig:
@@ -51,7 +51,7 @@ MDIRS += $(HCP_CREDS_ENROLLCA)
 CMD_CREDS_ENROLLCA := cd /creds/enrollca &&
 CMD_CREDS_ENROLLCA += openssl genrsa -out CA.priv &&
 CMD_CREDS_ENROLLCA += openssl req -new -key CA.priv -subj /CN=localhost -x509 -out CA.cert &&
-CMD_CREDS_ENROLLCA += $(CMD_CREDS_CHOWN) CA.priv CA.cert
+CMD_CREDS_ENROLLCA += $(CMD_CREDS_CHOWN)
 $(HCP_CREDS_OUT)/done.enrollca: | $(HCP_CREDS_ENROLLCA)
 $(HCP_CREDS_OUT)/done.enrollca: $(HCP_CREDS_OUT)/reference
 $(HCP_CREDS_OUT)/done.enrollca:
