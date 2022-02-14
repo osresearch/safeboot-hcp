@@ -28,27 +28,26 @@ HCP_SAFEBOOT_SUBSETS :=
 # function safeboot_subset()
 # $1 = name
 # $2 = path relative to /safeboot, include leading and trailing "/"
-# $3 = ownership (first arg to "chown")
-# $4 = attributes (first arg to "chmod")
-# $5 = source filenames
+# $3 = attributes (first arg to "chmod")
+# $4 = source filenames
 define safeboot_subset
 $(eval tmp_CMD := mkdir -p $(HCP_SAFEBOOT_INSTALL_DEST)$2 ;)
 $(eval tmp_CMD += cd $(HCP_SAFEBOOT_INSTALL_DEST)$2 ;)
-$(eval tmp_CMD += $(foreach i,$5,cp /source$2$i ./ ; chown $3 $i ; chmod $4 $i ;))
+$(eval tmp_CMD += $(foreach i,$4,cp /source$2$i ./ ; chmod $3 $i ;))
 
 $(HCP_SAFEBOOT_OUT)/$1: | $(HCP_SAFEBOOT_INSTALL_TOUCH)
 $(HCP_SAFEBOOT_OUT)/$1: $(HCP_BASE_TOUCHFILE)
-$(HCP_SAFEBOOT_OUT)/$1: $(foreach i,$5,$(HCP_SAFEBOOT_SRC)$2$i)
+$(HCP_SAFEBOOT_OUT)/$1: $(foreach i,$4,$(HCP_SAFEBOOT_SRC)$2$i)
 	$Q$(HCP_SAFEBOOT_DOCKER_RUN) "$(tmp_CMD)"
 	$Qtouch $$@
 
 $(eval HCP_SAFEBOOT_SUBSETS += $1)
 endef
 
-$(eval $(call safeboot_subset,sb.root,/,root:root,644,functions.sh safeboot.conf))
-$(eval $(call safeboot_subset,sb.sbin,/sbin/,root:root,755,$(shell ls -1 $(HCP_SAFEBOOT_SRC)/sbin)))
-$(eval $(call safeboot_subset,sb.tests,/tests/,root:root,755,$(shell ls -1 $(HCP_SAFEBOOT_SRC)/tests)))
-$(eval $(call safeboot_subset,sb.initramfs,/initramfs/,root:root,755,\
+$(eval $(call safeboot_subset,sb.root,/,644,functions.sh safeboot.conf))
+$(eval $(call safeboot_subset,sb.sbin,/sbin/,755,$(shell ls -1 $(HCP_SAFEBOOT_SRC)/sbin)))
+$(eval $(call safeboot_subset,sb.tests,/tests/,755,$(shell ls -1 $(HCP_SAFEBOOT_SRC)/tests)))
+$(eval $(call safeboot_subset,sb.initramfs,/initramfs/,755,\
 		bootscript \
 		busybox.config \
 		cmdline.txt \
@@ -72,7 +71,7 @@ HCP_SAFEBOOT_INSTALL_RUN := \
 
 HCP_SAFEBOOT_INSTALL_CMD := cd /put_it_here ;
 HCP_SAFEBOOT_INSTALL_CMD += tar zcf safeboot.tar.gz $(HCP_SAFEBOOT_INSTALL_DEST) ;
-HCP_SAFEBOOT_INSTALL_CMD += chown --reference=sb.root safeboot.tar.gz
+HCP_SAFEBOOT_INSTALL_CMD += /hcp/base/chowner.sh sb.root safeboot.tar.gz
 
 $(HCP_SAFEBOOT_OUT)/safeboot.tar.gz: $(foreach i,$(HCP_SAFEBOOT_SUBSETS),$(HCP_SAFEBOOT_OUT)/$i)
 $(HCP_SAFEBOOT_OUT)/safeboot.tar.gz:
