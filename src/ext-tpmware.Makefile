@@ -58,7 +58,7 @@ $(eval TPMWARE_$1_RUN := $(HCP_TPMWARE_DOCKER_RUN))
 $(eval TPMWARE_$1_RUN += --mount type=bind,source=$(HCP_TPMWARE_SRC)/$1,destination=/$1)
 $(eval TPMWARE_$1_RUN += $(HCP_BUILDER_DNAME))
 $(eval TPMWARE_$1_RUN += bash -c)
-$(eval TPMWARE_$1_CHOWN := chown -R --reference=$3 .)
+$(eval TPMWARE_$1_CHOWN += /hcp/base/chowner.sh $3 .)
 $(eval TPMWARE_$1_BOOTSTRAP := cd /$1 ; $(strip $4) ; $(TPMWARE_$1_CHOWN))
 $(eval TPMWARE_$1_CONFIGURE := cd /$1 ; $(strip $5) ; $(TPMWARE_$1_CHOWN))
 $(eval TPMWARE_$1_COMPILE := cd /$1 ; $(strip $6) ; $(TPMWARE_$1_CHOWN))
@@ -177,7 +177,7 @@ HCP_TPMWARE_INSTALL_RUN := $(HCP_TPMWARE_DOCKER_RUN) \
 
 TGZ_CMD := cd /put_it_here ;
 TGZ_CMD += tar zcf install.tar.gz $(HCP_TPMWARE_INSTALL_DEST) ;
-TGZ_CMD += chown --reference=swtpm.installed install.tar.gz
+TGZ_CMD += /hcp/base/chowner.sh swtpm.installed install.tar.gz
 
 $(HCP_TPMWARE_OUT)/install.tar.gz: $(foreach i,$(TPMWARE_MODULES),$(HCP_TPMWARE_OUT)/$i.installed)
 $(HCP_TPMWARE_OUT)/install.tar.gz:
