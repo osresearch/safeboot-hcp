@@ -11,15 +11,20 @@
 
 	expect_root
 
-	if [[ ! -f $HCP_ENROLLSVC_STATE_PREFIX/initialized ]]; then
-		echo "Warning: state not initialized, waiting" >&2
-		sleep 10
-		if [[ ! -f $HCP_ENROLLSVC_STATE_PREFIX/initialized ]]; then
+	waitsecs=0
+	waitinc=3
+	waitcount=0
+	until [[ -f $HCP_ENROLLSVC_STATE_PREFIX/initialized ]]; do
+		if [[ $((++waitcount)) -eq 10 ]]; then
 			echo "Error: state not initialized, failing" >&2
 			exit 1
 		fi
-		echo "State now initialized" >&2
-	fi
+		if [[ $waitcount -eq 1 ]]; then
+			echo "Warning: state not initialized, waiting" >&2
+		fi
+		sleep $((waitsecs+=waitinc))
+		echo "Warning: retrying after $waitsecs-second wait" >&2
+	done
 )
 
 . /hcp/enrollsvc/common.sh

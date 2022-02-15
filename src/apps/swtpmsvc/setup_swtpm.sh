@@ -8,8 +8,18 @@ echo "$HCP_VER" > $HCP_SWTPMSVC_STATE_PREFIX/version
 # need HCP_SWTPMSVC_ENROLL_API when doing the setup.
 echo "      HCP_SWTPMSVC_ENROLL_API=$HCP_SWTPMSVC_ENROLL_API" >&2
 
-TPMDIR=$HCP_SWTPMSVC_STATE_PREFIX/tpm
+# Produce to "tpm-temp", and only move it to "tpm" if we make it all the way to
+# the bottom. E.g. if the enrollsvc can't be reached within our
+# retries/timeouts, we'd rather bail out with nothing than have an initialized
+# swtpm that didn't enroll as promised. The trap handler removes "tpm-temp",
+# which ensures we cleanup if final success wasn't achieved.
+TPMDIR=$HCP_SWTPMSVC_STATE_PREFIX/tpm-temp
+TPMDIR_FINAL=$HCP_SWTPMSVC_STATE_PREFIX/tpm
 mkdir $TPMDIR
+function trapper {
+        rm -rf $TPMDIR
+}
+trap trapper EXIT ERR
 
 echo "Setting up a software TPM for $HCP_SWTPMSVC_ENROLL_HOSTNAME"
 
@@ -43,6 +53,25 @@ kill $THEPID
 if [[ -n "$HCP_SWTPMSVC_ENROLL_API" ]]; then
 # Now, enroll this TPM/host combination with the enrollment service.  The
 # enroll_api.py script hits the API endpoint for us.
-python3 /hcp/swtpmsvc/enroll_api.py --api $HCP_SWTPMSVC_ENROLL_API \
-	add $TPMDIR/ek.pub $HCP_SWTPMSVC_ENROLL_HOSTNAME
+	waitsecs=0
+	waitinc=3
+	waitcount=0
+	until python3 /hcp/swtpmsvc/enroll_api.py --api $HCP_SWTPMSVC_ENROLL_API \
+        	        add $TPMDIR/ek.pub $HCP_SWTPMSVC_ENROLL_HOSTNAME;
+        do
+		if [[ $((++waitcount)) -eq 10 ]]; then
+			echo "Error: state not initialized, failing"
+			exit 1
+		fi
+		if [[ $waitcount -eq 1 ]]; then
+			echo "Warning: state not initialized, waiting"
+		fi
+		sleep $((waitsecs+=waitinc))
+		echo "Warning: retrying after $waitsecs-second wait"
+	done
+        echo "Info: enrolled Software TPM at $HCP_SWTPMSVC_ENROLL_API"
 fi
+
+# Only if we get here do we move the TPM state to its final path (which means
+# the trap handler won't destroy it).
+mv $TPMDIR $TPMDIR_FINAL

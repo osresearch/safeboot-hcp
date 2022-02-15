@@ -5,15 +5,20 @@
 expect_root
 
 # Handle lazy-initialization (by waiting for the _repl sub-service to do it).
-if [[ ! -f $HCP_ATTESTSVC_STATE_PREFIX/initialized ]]; then
-	echo "Warning: state not initialized, waiting" >&2
-	sleep 10
-	if [[ ! -f $HCP_ATTESTSVC_STATE_PREFIX/initialized ]]; then
+waitsecs=0
+waitinc=3
+waitcount=0
+until [[ -f $HCP_ATTESTSVC_STATE_PREFIX/initialized ]]; do
+	if [[ $((++waitcount)) -eq 10 ]]; then
 		echo "Error: state not initialized, failing" >&2
 		exit 1
 	fi
-	echo "State now initialized" >&2
-fi
+	if [[ $waitcount -eq 1 ]]; then
+		echo "Warning: state not initialized, waiting" >&2
+	fi
+	sleep $((waitsecs+=waitinc))
+	echo "Warning: retrying after $waitsecs-second wait" >&2
+done
 
 # Validate that version is an exact match (obviously we need the same major,
 # but right now we expect+tolerate nothing other than the same minor too).

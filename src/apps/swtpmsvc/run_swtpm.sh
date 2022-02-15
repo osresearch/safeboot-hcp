@@ -5,7 +5,7 @@
 # Handle lazy-initialization.
 if [[ ! -f $HCP_SWTPMSVC_STATE_PREFIX/initialized ]]; then
 	echo "Warning: state not initialized, initializing now" >&2
-	/hcp/swtpmsvc/setup_swtpm.sh
+	/hcp/swtpmsvc/setup_swtpm.sh >&2
 	touch $HCP_SWTPMSVC_STATE_PREFIX/initialized
 	echo "State now initialized" >&2
 fi
