@@ -1,3 +1,7 @@
+# Using this version string helps with some older docker-compose versions that
+# we regularly encounter.
+version: "3.0"
+
 # Persistent state for the services. (enrollsvc and attestsvc are actually two
 # services/containers each - one container mounts the volume read-write and the
 # other mounts it read-only.)
@@ -17,14 +21,7 @@ networks:
 # - The healthcheck mechanisms used here run on tight intervals in order to
 #   improve the UX for dev and debug. Prod usage would likely reduce the
 #   candence of health-checking. (The time it takes for a service to be
-#   healthchecked as "healthy" is the same as the time _between_ healthchecks.
-#   The dependencies in service start up cause staggering, meaning the time for
-#   a test to run is almost _exactly_ an integer multiple of the healthcheck
-#   interval.)
-# - The lazy-initialization of state is the reason that we have the
-#   "depends_on" relationships and "service_healthy" conditions. And the fact
-#   that the "service_completed_successfully" conditions in the latest spec
-#   isn't available in most distros is the reason we need lazy-initialization.
+#   healthchecked as "healthy" is the same as the time _between_ healthchecks.)
 # - It is entirely artificial to have all these services running under the same
 #   host with the same docker-compose config. Again, it's a dev+debug thing.
 #   Just in case you were wondering.
@@ -70,9 +67,6 @@ services:
           - hcpnetwork
         environment:
           - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
-        depends_on:
-            enrollsvc_mgmt:
-                condition: service_healthy
         healthcheck:
             test: git ls-remote --heads git://localhost/enrolldb || exit 1
             timeout: 1s
@@ -90,9 +84,6 @@ services:
           - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
           - HCP_ATTESTSVC_REMOTE_REPO=git://enrollsvc_repl/enrolldb
           - HCP_ATTESTSVC_UPDATE_TIMER=10
-        depends_on:
-            enrollsvc_repl:
-                condition: service_healthy
         healthcheck:
             test: test -f /attestdb/initialized && test ! -f /attestdb/transient-failure
             timeout: 1s
@@ -106,9 +97,6 @@ services:
           - hcpnetwork
         environment:
           - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
-        depends_on:
-            attestsvc_repl:
-                condition: service_healthy
         healthcheck:
             test: curl -f -G http://localhost:8080/ || exit 1
             timeout: 1s
@@ -128,9 +116,6 @@ services:
           - HCP_SWTPMSVC_ENROLL_HOSTNAME=myhost
           - HCP_SOCKET=/tpmsocket/tpm
           - HCP_SWTPMSVC_ENROLL_API=http://enrollsvc_mgmt:5000
-        depends_on:
-            enrollsvc_mgmt:
-                condition: service_healthy
         healthcheck:
             test: /hcp/swtpmsvc/healthcheck.sh
             timeout: 1s
@@ -149,6 +134,3 @@ services:
           - HCP_CLIENT_ATTEST_URL=http://attestsvc_hcp:8080
           - HCP_CLIENT_TPM2TOOLS_TCTI=swtpm:path=/tpmsocket/tpm
           - HCP_CLIENT_VERIFIER=/enrollverif
-        depends_on:
-            swtpmsvc:
-                condition: service_healthy
