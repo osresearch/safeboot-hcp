@@ -59,6 +59,22 @@ export HCP_CLIENT_ATTEST_URL
 
 echo "Running 'client'"
 
+# Check that our TPM is configured and alive
+waitsecs=0
+waitinc=3
+waitcount=0
+until tpm2_pcrread; do
+	if [[ $((++waitcount)) -eq 10 ]]; then
+		echo "Error: TPM not available, failing" >&2
+		exit 1
+	fi
+	if [[ $waitcount -eq 1 ]]; then
+		echo "Warning: TPM not available, waiting" >&2
+	fi
+	sleep $((waitsecs+=waitinc))
+	echo "Warning: retrying after $waitsecs-second wait" >&2
+done
+
 # TODO: this is a temporary and bad fix. The swtpm assumes that connections
 # that are set up (tpm2_startup) but not gracefully terminated (tpm2_shutdown)
 # are suspicious, and if it happens enough (3 or 4 times, it seems) the TPM
@@ -72,9 +88,6 @@ echo "Running 'client'"
 # counter!! On proper TPMs (e.g. GCE vTPM), this dictionarylockout call will
 # actually fail so has to be commented out.
 tpm2_dictionarylockout --clear-lockout
-
-# Check that our TPM is configured and alive
-tpm2_pcrread
 
 # Now keep trying to get a successful attestation. It may take a few seconds
 # for our TPM enrollment to propagate to the attestation server, so it's normal
