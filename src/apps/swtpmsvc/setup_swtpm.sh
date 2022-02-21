@@ -24,14 +24,14 @@ trap trapper EXIT ERR
 echo "Setting up a software TPM for $HCP_SWTPMSVC_ENROLL_HOSTNAME"
 
 # Initialize a software TPM
-swtpm_setup --tpm2 --createek --display --tpmstate $TPMDIR --config /dev/null
+swtpm_setup --tpm2 --createek --tpmstate $TPMDIR --config /dev/null
 
 # Temporarily start the TPM on an unusual port (and sleep a second to be sure
 # it's alive before we hit it). TODO: Better would be to tail_wait the output.
 swtpm socket --tpm2 --tpmstate dir=$TPMDIR \
 	--server type=unixio,path=/throwaway \
 	--ctrl type=unixio,path=/throwaway.ctrl \
-	--flags startup-clear &
+	--flags startup-clear > /dev/null 2>&1 &
 THEPID=$!
 disown %
 echo "Started temporary instance of swtpm"
@@ -41,12 +41,12 @@ sleep 1
 # already achieve this?) This is natively in TPM2B_PUBLIC format, but generate
 # the PEM equivalent at the same time, as this can come in handy with testing.
 export TPM2TOOLS_TCTI=swtpm:path=/throwaway
-tpm2 createek -c $TPMDIR/ek.ctx -u $TPMDIR/ek.pub
+tpm2 createek -c $TPMDIR/ek.ctx -u $TPMDIR/ek.pub > /dev/null 2>&1
 tpm2 print -t TPM2B_PUBLIC -f PEM $TPMDIR/ek.pub > $TPMDIR/ek.pem
 chmod a+r $TPMDIR/ek.pub
 chmod a+r $TPMDIR/ek.pem
 echo "Software TPM state created;"
-tpm2 print -t TPM2B_PUBLIC $TPMDIR/ek.pub
+tpm2 print -t TPM2B_PUBLIC $TPMDIR/ek.pub > /dev/null >&1
 cat $TPMDIR/ek.pem
 kill $THEPID
 

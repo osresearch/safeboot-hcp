@@ -37,10 +37,10 @@ if [[ -n "$HCP_SOCKET" ]]; then
 	swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
 		--server type=unixio,path=$HCP_SOCKET \
 		--ctrl type=unixio,path=$HCP_SOCKET.ctrl \
-		--flags startup-clear
+		--flags startup-clear > /dev/null 2>&1
 else
 	swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
 		--server type=tcp,bindaddr=0.0.0.0,port=$TPMPORT1 \
 		--ctrl type=tcp,bindaddr=0.0.0.0,port=$TPMPORT2 \
-		--flags startup-clear
+		--flags startup-clear > /dev/null 2>&1
 fi
