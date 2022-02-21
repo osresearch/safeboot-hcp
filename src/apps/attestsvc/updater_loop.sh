@@ -11,6 +11,17 @@ function datetime_log {
 	echo "$d: $1"
 }
 
+function pull_updates {
+	(git fetch twin && git fetch origin) || return 1
+	updates=`git log ..origin/master --oneline | wc -l`
+	if [[ $updates -eq 0 ]]; then
+		return 0
+	fi
+	datetime_log "merging $updates update(s)"
+	git log ..origin/master --oneline
+	git merge origin/master > /dev/null
+}
+
 # By discipline and convention, we do all our bash with "-e", so make sure to
 # sponge up any errors that aren't bugs or irrecoverable conditions.
 #
@@ -29,14 +40,12 @@ function datetime_log {
 while /bin/true; do
 	cd $HCP_ATTESTSVC_STATE_PREFIX
 	cd next
-	datetime_log "updating"
-	if (git fetch twin && git fetch origin && git merge origin/master); then
+	if pull_updates; then
 		cd $HCP_ATTESTSVC_STATE_PREFIX
 		rm -f transient-failure
 		cp -P current thirdwheel
 		cp -T -P next current
 		mv -T thirdwheel next
-		datetime_log "sleeping for $HCP_ATTESTSVC_UPDATE_TIMER seconds"
 		sleep $HCP_ATTESTSVC_UPDATE_TIMER
 	else
 		# TODO: we should alert that the fetch/merge failed. Such
