@@ -42,6 +42,12 @@ HCP_EXISTING_IMAGES := $(shell docker image ls \
 
 include src/Makefile
 
+#########
+# Tests #
+#########
+
+include tests/Makefile
+
 ###################
 # Cumulative rule #
 ###################

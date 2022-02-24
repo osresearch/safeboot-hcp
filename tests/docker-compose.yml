@@ -1,0 +1,88 @@
+version: "3.0"
+
+volumes:
+    testenrolldb:
+    testattestdb:
+
+networks:
+    testnetwork:
+
+services:
+    enrollsvc_mgmt:
+        image: hcp_enrollsvc:devel
+        command: /hcp/enrollsvc/run_mgmt.sh
+        volumes:
+          - testenrolldb:/enrolldb:rw
+          - ../output/creds/enrollsig:/enrollsig:ro
+          - ../output/creds/enrollca:/enrollca:ro
+        networks:
+          - testnetwork
+        environment:
+          - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
+          - HCP_ENROLLSVC_SIGNER=/enrollsig
+          - HCP_ENROLLSVC_GENCERT=/enrollca
+          - HCP_ENROLLSVC_REALM=FOO.NOWHERE.XYZ
+        healthcheck:
+            test: curl -f -G http://localhost:5000/ || exit 1
+            timeout: 1s
+            interval: 2s
+    enrollsvc_repl:
+        image: hcp_enrollsvc:devel
+        command: /hcp/enrollsvc/run_repl.sh
+        volumes:
+          - testenrolldb:/enrolldb:ro
+        networks:
+          - testnetwork
+        environment:
+          - HCP_ENROLLSVC_STATE_PREFIX=/enrolldb
+        healthcheck:
+            test: git ls-remote --heads git://localhost/enrolldb || exit 1
+            timeout: 1s
+            interval: 2s
+
+    attestsvc_repl:
+        image: hcp_attestsvc:devel
+        command: /hcp/attestsvc/run_repl.sh
+        volumes:
+          - testattestdb:/attestdb:rw
+        networks:
+          - testnetwork
+        environment:
+          - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
+          - HCP_ATTESTSVC_REMOTE_REPO=git://enrollsvc_repl/enrolldb
+          - HCP_ATTESTSVC_UPDATE_TIMER=10
+        healthcheck:
+            test: test -f /attestdb/initialized && test ! -f /attestdb/transient-failure
+            timeout: 1s
+            interval: 2s
+    attestsvc_hcp:
+        image: hcp_attestsvc:devel
+        command: /hcp/attestsvc/run_hcp.sh
+        volumes:
+          - testattestdb:/attestdb:ro
+        networks:
+          - testnetwork
+        environment:
+          - HCP_ATTESTSVC_STATE_PREFIX=/attestdb
+        healthcheck:
+            test: curl -f -G http://localhost:8080/ || exit 1
+            timeout: 1s
+            interval: 2s
+
+    soakhost:
+        image: hcp_soakhost:devel
+        command: /hcp/soakhost/soak.sh
+        volumes:
+          - ../output/creds/enrollverif:/enrollverif:ro
+        networks:
+          - testnetwork
+        environment:
+          - HCP_CLIENT_ATTEST_URL=http://attestsvc_hcp:8080
+          - HCP_CLIENT_VERIFIER=/enrollverif
+          - HCP_SWTPMSVC_ENROLL_API=http://enrollsvc_mgmt:5000
+          - NUM_SWTPMS=3
+          - NUM_WORKERS=1
+          - NUM_LOOPS=10
+    soakhost_manual:
+        extends: soakhost
+        command: bash -i
