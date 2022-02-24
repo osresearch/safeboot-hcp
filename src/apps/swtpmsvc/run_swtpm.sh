@@ -6,7 +6,10 @@
 if [[ ! -f $HCP_SWTPMSVC_STATE_PREFIX/initialized ]]; then
 	echo "Warning: state not initialized, initializing now" >&2
 	/hcp/swtpmsvc/setup_swtpm.sh >&2
-	touch $HCP_SWTPMSVC_STATE_PREFIX/initialized
+	if [[ ! -f $HCP_SWTPMSVC_STATE_PREFIX/initialized ]]; then
+		echo "Error: state initialization failed" >&2
+		exit 1
+	fi
 	echo "State now initialized" >&2
 fi
 
@@ -34,12 +37,12 @@ trap cleanup_trap EXIT
 # Start the software TPM
 
 if [[ -n "$HCP_SOCKET" ]]; then
-	swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
+	exec swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
 		--server type=unixio,path=$HCP_SOCKET \
 		--ctrl type=unixio,path=$HCP_SOCKET.ctrl \
 		--flags startup-clear > /dev/null 2>&1
 else
-	swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
+	exec swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
 		--server type=tcp,bindaddr=0.0.0.0,port=$TPMPORT1 \
 		--ctrl type=tcp,bindaddr=0.0.0.0,port=$TPMPORT2 \
 		--flags startup-clear > /dev/null 2>&1

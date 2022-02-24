@@ -46,7 +46,6 @@ tpm2 print -t TPM2B_PUBLIC -f PEM $TPMDIR/ek.pub > $TPMDIR/ek.pem
 chmod a+r $TPMDIR/ek.pub
 chmod a+r $TPMDIR/ek.pem
 echo "Software TPM state created;"
-tpm2 print -t TPM2B_PUBLIC $TPMDIR/ek.pub > /dev/null >&1
 cat $TPMDIR/ek.pem
 kill $THEPID
 
@@ -75,3 +74,4 @@ fi
 # Only if we get here do we move the TPM state to its final path (which means
 # the trap handler won't destroy it).
 mv $TPMDIR $TPMDIR_FINAL
+touch $HCP_SWTPMSVC_STATE_PREFIX/initialized
