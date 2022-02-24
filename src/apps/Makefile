@@ -17,7 +17,11 @@ endef
 define app_create
 $(HCP_APPS_OUT)/$1/: | $(HCP_APPS_OUT)
 MDIRS += $(HCP_APPS_OUT)/$1/
-$(HCP_APPS_OUT)/created.$1: | $(HCP_APPS_OUT)/$1/Dockerfile
+$(HCP_APPS_OUT)/$1/Dockerfile: $(HCP_APPS_OUT)/$1/hcp.Dockerfile
+	$Qecho "FROM $(HCP_APPS_BASE)" > $$@
+	$Qcat $$< >> $$@
+$(HCP_APPS_OUT)/created.$1: $(HCP_APPS_OUT)/$1/Dockerfile
+$(HCP_APPS_OUT)/created.$1: $(HCP_APPS_BASE_TOUCH)
 $(HCP_APPS_OUT)/created.$1:
 	$Qecho "Building container image $1 ($(HCP_DSPACE)$1$(HCP_DTAG))"
 	$Qdocker build \
@@ -41,11 +45,6 @@ clean_apps: clean_$1
 endif
 $(foreach i,$(shell ls -1 $(HCP_APPS_SRC)/$1 | grep -v "Dockerfile"),\
 	$(eval $(call app_add,$1,$(HCP_APPS_SRC)/$1/,$i)))
-$(HCP_APPS_OUT)/created.$1: $(HCP_APPS_OUT)/$1/Dockerfile
-$(HCP_APPS_OUT)/created.$1: $(HCP_APPS_BASE_TOUCH)
-$(HCP_APPS_OUT)/$1/Dockerfile: $(HCP_APPS_OUT)/$1/hcp.Dockerfile
-	$Qecho "FROM $(HCP_APPS_BASE)" > $$@
-	$Qcat $$< >> $$@
 endef
 
 #########################
