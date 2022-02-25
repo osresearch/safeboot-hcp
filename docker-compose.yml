@@ -120,6 +120,13 @@ services:
             test: /hcp/swtpmsvc/healthcheck.sh
             timeout: 1s
             interval: 2s
+    swtpmsvc_setup:
+        extends: swtpmsvc
+        command: /hcp/swtpmsvc/setup_swtpm.sh
+    swtpmsvc_setup_no_enroll:
+        extends: swtpmsvc_setup
+        environment:
+          - HCP_SWTPMSVC_NO_ENROLL=1
 
     #### The test HCP client
     client:

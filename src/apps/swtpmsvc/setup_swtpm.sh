@@ -49,7 +49,7 @@ echo "Software TPM state created;"
 cat $TPMDIR/ek.pem
 kill $THEPID
 
-if [[ -n "$HCP_SWTPMSVC_ENROLL_API" ]]; then
+if [[ -n "$HCP_SWTPMSVC_ENROLL_API" && -z "$HCP_SWTPMSVC_NO_ENROLL" ]]; then
 # Now, enroll this TPM/host combination with the enrollment service.  The
 # enroll_api.py script hits the API endpoint for us.
 	waitsecs=0
