@@ -27,6 +27,11 @@ done
 (echo "Error: expected version $HCP_VER, but got '$state_version' instead" &&
 	exit 1) || exit 1
 
+echo "Setting SIGTERM trap handler"
+trap 'kill -TERM $UPID' TERM
+
 echo "Running 'attestsvc-hcp' service"
 
-drop_privs_hcp /hcp/attestsvc/flask_wrapper.sh
+drop_privs_hcp /hcp/attestsvc/flask_wrapper.sh &
+UPID=$!
+wait $UPID

@@ -38,6 +38,9 @@ expect_root
 (echo "Error: expected version $HCP_VER, but got '$state_version' instead" &&
 	exit 1) || exit 1
 
+echo "Setting SIGTERM trap handler"
+trap 'kill -TERM $UPID' TERM
+
 echo "Running 'enrollsvc-repl' service (git-daemon)"
 
 GITDAEMON=${HCP_ENROLLSVC_GITDAEMON:=/usr/lib/git-core/git-daemon}
@@ -49,4 +52,6 @@ TO_RUN="$GITDAEMON \
 	$REPO_PATH"
 
 echo "Running (as db_user): $TO_RUN"
-drop_privs_db $TO_RUN
+drop_privs_db $TO_RUN &
+UPID=$!
+wait $UPID

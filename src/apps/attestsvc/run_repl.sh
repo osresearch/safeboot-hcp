@@ -37,6 +37,11 @@ fi
 	exit 1) || exit 1
 
 
+echo "Setting SIGTERM trap handler"
+trap 'kill -TERM $UPID' TERM
+
 echo "Running 'attestsvc-repl' service"
 
-drop_privs_hcp /hcp/attestsvc/updater_loop.sh
+drop_privs_hcp /hcp/attestsvc/updater_loop.sh &
+UPID=$!
+wait $UPID

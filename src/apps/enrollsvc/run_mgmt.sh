@@ -110,6 +110,11 @@ echo "export DIAGNOSTICS=$DIAGNOSTICS" >> /safeboot/enroll.conf
 echo "               SIGNING_KEY_PRIV=$SIGNING_KEY_PRIV" >&2
 echo "                SIGNING_KEY_PUB=$SIGNING_KEY_PUB" >&2
 
+echo "Setting SIGTERM trap handler"
+trap 'kill -TERM $UPID' TERM
+
 echo "Running 'enrollsvc-mgmt' service"
 
-drop_privs_flask /hcp/enrollsvc/flask_wrapper.sh
+drop_privs_flask /hcp/enrollsvc/flask_wrapper.sh &
+UPID=$!
+wait $UPID
