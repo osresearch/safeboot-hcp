@@ -60,20 +60,23 @@ export HCP_CLIENT_ATTEST_URL
 echo "Running 'client'"
 
 # Check that our TPM is configured and alive
+tmp_pcrread=`mktemp`
 waitsecs=0
 waitinc=3
 waitcount=0
-until tpm2_pcrread; do
-	if [[ $((++waitcount)) -eq 10 ]]; then
+until tpm2_pcrread >> "$tmp_pcrread" 2>&1; do
+	if [[ $((++waitcount)) -eq 6 ]]; then
+		cat $tmp_pcrread >&2
 		echo "Error: TPM not available, failing" >&2
 		exit 1
 	fi
-	if [[ $waitcount -eq 1 ]]; then
-		echo "Warning: TPM not available, waiting" >&2
-	fi
-	sleep $((waitsecs+=waitinc))
-	echo "Warning: retrying after $waitsecs-second wait" >&2
+	echo "Warning: TPM not available, waiting $((waitsecs+=waitinc)) seconds" >&2
+	sleep $waitsecs
 done
+if [[ $waitcount -gt 0 ]]; then
+	echo "Info: TPM available after retrying" >&2
+fi
+rm $tmp_pcrread
 
 # TODO: this is a temporary and bad fix. The swtpm assumes that connections
 # that are set up (tpm2_startup) but not gracefully terminated (tpm2_shutdown)
@@ -92,25 +95,25 @@ tpm2_dictionarylockout --clear-lockout
 # Now keep trying to get a successful attestation. It may take a few seconds
 # for our TPM enrollment to propagate to the attestation server, so it's normal
 # for this to fail a couple of times before succeeding.
-counter=0
-while true
-do
-	echo "Trying an attestation"
-	unset itfailed
-	./sbin/tpm2-attest attest $HCP_CLIENT_ATTEST_URL > secrets || itfailed=1
-	if [[ -z "$itfailed" ]]; then
-		echo "Success!"
-		break
-	fi
-	((counter++)) || true
-	echo "Failure #$counter (we expect a couple of these before success)"
-	if [[ $counter -gt 4 ]]; then
-		echo "Giving up"
+tmp_attest=`mktemp`
+waitsecs=0
+waitinc=3
+waitcount=0
+until ./sbin/tpm2-attest attest $HCP_CLIENT_ATTEST_URL \
+				> secrets 2>> "$tmp_attest"; do
+	if [[ $((++waitcount)) -eq 6 ]]; then
+		cat $tmp_attest >&2
+		echo "Error: attestation failed multiple times, giving up" >&2
 		exit 1
 	fi
-	echo "Sleeping 5 seconds before retrying"
-	sleep 5
+	echo "Warning: attestation failed, may just be replication latency" >&2
+	echo "Sleeping for $((waitsecs+=waitinc)) seconds" >&2
+	sleep $waitsecs
 done
+if [[ $waitcount -gt 0 ]]; then
+	echo "Info: attestation succeeded after retrying" >&2
+fi
+rm $tmp_attest
 
 (
 	echo "Extracting the attestation result;" && \
@@ -125,6 +128,5 @@ done
 	echo "It will be called $SECRETS_NAME" && \
 	cp secrets /escapehatch/$SECRETS_NAME && exit 1
 )
-
 
 echo "Client ending"
