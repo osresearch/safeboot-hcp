@@ -232,14 +232,12 @@ if __name__ == '__main__':
     # Dispatch. Note that 'json' is not necessarily JSON. :-) E.g. the getAssetSigner
     # function will None
     try:
-        result, json = args.func(args)
+        result, j = args.func(args)
     except:
         print("Error, unable to hit API end-point")
         sys.exit(-1)
-    if json:
-        print("Output;")
-        print(json)
+    if j:
+        print(json.dumps(j))
     if not result:
         print("Error, API returned failure")
         sys.exit(-1)
-    print("Success")
