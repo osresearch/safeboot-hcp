@@ -31,8 +31,8 @@ function run_all {
 # Handle a set of software TPMs #
 #################################
 
-[[ -z $NUM_SWTPMS ]] &&
-	echo "ERROR, set NUM_SWTPMS" &&
+[[ -z $SOAK_NUM_SWTPMS ]] &&
+	echo "ERROR, set SOAK_NUM_SWTPMS" &&
 	exit 1 ||
 	true
 
@@ -48,19 +48,34 @@ declare -a swtpm_hostname
 declare -a swtpm_pid
 declare -a swtpm_error
 declare -a swtpm_lock
+declare -a swtpm_enrolled
+declare -a swtpm_ekpubhash
 
 # Iterator
 function swtpm_all {
 	torun=$1
 	shift
-	run_all $NUM_SWTPMS $torun $@
+	run_all $SOAK_NUM_SWTPMS $torun $@
+}
+
+# Given a swtpm, calculate the ekpubhash, then query enrollsvc to see if it's
+# enrolled.
+function swtpm_query {
+	ossl=$(openssl sha256 ${swtpm_prefix[$1]}/tpm/ek.pub)
+	swtpm_ekpubhash[$1]=$(echo "$ossl" | sed -e "s/^.*= //" | cut -c 1-32)
+	echo 0 > ${swtpm_enrolled[$1]}
+	json=$(python3 /hcp/swtpmsvc/enroll_api.py --api $HCP_SWTPMSVC_ENROLL_API \
+					query ${swtpm_ekpubhash[$1]})
+	echo "$json" | jq -e '.entries|length>0' &&
+		echo 1 > ${swtpm_enrolled[$1]} || true
 }
 
 # Open logs and do foregrounded setup for each swtpm
 function swtpm_setup {
-	swtpm_log[$1]=`mktemp`
 	swtpm_prefix[$1]=$BASE_SWTPM/$1
 	swtpm_socket[$1]=$BASE_SWTPM/socket_$1
+	swtpm_log[$1]=$BASE_SWTPM/log_$1
+	swtpm_enrolled[$1]=$BASE_SWTPM/enrolled_$1
 	swtpm_hostname[$1]=host$1.realm.example.xyz
 	swtpm_pid[$1]=""
 	swtpm_error[$1]=$BASE_SWTPM/error_$1
@@ -73,13 +88,27 @@ function swtpm_setup {
 		export HCP_SWTPMSVC_STATE_PREFIX=${swtpm_prefix[$1]}
 		export HCP_SOCKET=${swtpm_socket[$1]}
 		export HCP_SWTPMSVC_ENROLL_HOSTNAME=${swtpm_hostname[$1]}
-		/hcp/swtpmsvc/setup_swtpm.sh > ${swtpm_log[$1]} 2>&1 ||
+		/hcp/swtpmsvc/setup_swtpm.sh > ${swtpm_log[$1]} 2>&1 &&
+				swtpm_query $1 >> ${swtpm_log[$1]} 2>&1 ||
 			exitcode=$?
-		[[ $exitcode -ne 0 ]] &&
-			echo "FAILED" &&
-			touch ${swtpm_error[$1]} ||
-			echo "SUCCESS"
+		[[ $exitcode -eq 0 ]] &&
+			echo "SUCCESS" &&
+			echo 1 > ${swtpm_enrolled[$1]} ||
+			echo "FAILED"
+	else
+		echo -n "Existing swtpm $1 ... "
+		swtpm_query $1 >> ${swtpm_log[$1]} 2>&1 &&
+			exitcode=$?
+		[[ $exitcode -eq 0 ]] &&
+			echo -n "SUCCESS " &&
+			(
+				[[ $(cat ${swtpm_enrolled[$1]}) == "1" ]] &&
+					echo "(enrolled)" ||
+					echo "(not enrolled)"
+			) ||
+			echo "FAILED"
 	fi
+	[[ $exitcode -ne 0 ]] && touch ${swtpm_error[$1]}
 	return $exitcode
 }
 
@@ -95,7 +124,7 @@ function swtpm_start {
 	local waitsecs=0
 	local waitinc=1
 	local waitcount=0
-	local pcrread_log=`mktemp`
+	local pcrread_log=$(mktemp)
 	until tpm2_pcrread > $pcrread_log 2>&1; do
 		if [[ $((++waitcount)) -eq 3 ]]; then
 			echo "FAILED: TPM not available"
@@ -123,12 +152,12 @@ function swtpm_stop {
 function swtpm_on_exit {
 	[[ -f ${swtpm_error[$1]} ]] &&
 		rm -f ${swtpm_error[$1]} &&
-		[[ -n ${swtpm_log[$1]} ]] &&
+		[[ -f ${swtpm_log[$1]} ]] &&
 		echo "Dumping swtpm $1 logfile" &&
 		cat ${swtpm_log[$1]}
-	[[ -n ${swtpm_log[$1]} ]] && rm -f ${swtpm_log[$1]}
-	[[ -n ${swtpm_socket[$1]} ]] && rm -f ${swtpm_socket[$1]}*
-	[[ -n ${swtpm_prefix[$1]} ]] && rm -rf ${swtpm_prefix[$1]}
+	[[ -f ${swtpm_log[$1]} ]] && rm -f ${swtpm_log[$1]}
+	[[ -f ${swtpm_socket[$1]} ]] && rm -f ${swtpm_socket[$1]}*
+#	[[ -f ${swtpm_prefix[$1]} ]] && rm -rf ${swtpm_prefix[$1]}
 	[[ -d ${swtpm_lock[$1]} ]] && rmdir ${swtpm_lock[$1]}
 	true
 }
@@ -136,10 +165,10 @@ function swtpm_on_exit {
 # Find an unused swtpm and lock it
 function swtpm_get {
 	local resultpath=$1
-	i=$((NUM_SWTPMS + 1))
+	i=$((SOAK_NUM_SWTPMS + 1))
 	local retries=0
 	until false; do
-		i=$((SRANDOM % NUM_SWTPMS))
+		i=$((SRANDOM % SOAK_NUM_SWTPMS))
 		mkdir ${swtpm_lock[$i]} > /dev/null 2>&1 &&
 			break
 		if [[ $((++retries)) -eq 10 ]]; then
@@ -168,17 +197,17 @@ function swtpm_remove {
 ########################################
 
 # How many workers, and how many loops they run
-[[ -z $NUM_WORKERS ]] &&
-	echo "ERROR, set NUM_WORKERS" &&
+[[ -z $SOAK_NUM_WORKERS ]] &&
+	echo "ERROR, set SOAK_NUM_WORKERS" &&
 	exit 1 ||
 	true
-[[ -z $NUM_LOOPS ]] &&
-	echo "ERROR, set NUM_LOOPS" &&
+[[ -z $SOAK_NUM_LOOPS ]] &&
+	echo "ERROR, set SOAK_NUM_LOOPS" &&
 	exit 1 ||
 	true
 
-if [[ $NUM_SWTPMS -lt $NUM_WORKERS ]]; then
-	echo "Error, NUM_SWTPMS ($NUM_SWTPMS) < NUM_WORKERS ($NUM_WORKERS)"
+if [[ $SOAK_NUM_SWTPMS -lt $SOAK_NUM_WORKERS ]]; then
+	echo "Error, SOAK_NUM_SWTPMS ($SOAK_NUM_SWTPMS) < SOAK_NUM_WORKERS ($SOAK_NUM_WORKERS)"
 	exit 1
 fi
 
@@ -199,65 +228,113 @@ declare -a worker_error
 function worker_all {
 	torun=$1
 	shift
-	run_all $NUM_WORKERS $torun $@
+	run_all $SOAK_NUM_WORKERS $torun $@
 }
 
 # A single item of work, within the worker_loop
 function worker_item {
 	# Find and lock one of the available SWTPMs
 	swtpm_get ${worker_swtpm[$1]}
-	idx=`cat ${worker_swtpm[$1]}`
+	idx=$(cat ${worker_swtpm[$1]})
 	export TPM2TOOLS_TCTI=swtpm:path=${swtpm_socket[$idx]}
-	# Try the attestation (with retries to allow for delayed propogation of
-	# the SWTPM enrollment
-	local waitsecs=0
-	local waitinc=3
-	local waitcount=0
+	# Choose what work we'll do. If the swtpm isn't enrolled, easy, we'll
+	# enroll it. Otherwise, we will either unenroll it or attest, based on
+	# SOAK_PC_ATTEST. "PC"=="PerCent", meaning if it's 0 then we always
+	# unenroll, if it's 100, we always attest, and we can range between
+	# those extremes.
 	local failure=0
-	until ./sbin/tpm2-attest attest $HCP_CLIENT_ATTEST_URL \
-				> ${worker_secrets[$1]} \
-				2> ${worker_log[$1]};
-	do
-		if [[ $((++waitcount)) -eq 4 ]]; then
-			echo "FAILED: attestation failed"
-			echo "Dumping 'tpm2-attest' output;"
-			cat ${worker_log[$1]}
-			touch ${worker_error[$1]}
-			return 1
+	if [[ $(cat ${swtpm_enrolled[$idx]}) == "0" ]]; then
+		# Enroll
+		if ! json=$(python3 /hcp/swtpmsvc/enroll_api.py \
+					--api $HCP_SWTPMSVC_ENROLL_API \
+					add \
+					"${swtpm_prefix[$idx]}/tpm/ek.pub" \
+					"${swtpm_hostname[$idx]}" 2>> \
+						${worker_log[$1]}); then
+			echo "FAILED: enrollsvc mgmt API 'add' (json=$json)"
+			failure=1
+		elif ! ret=$(echo "$json" | jq -r '.returncode' 2>> \
+						${worker_log[$1]}); then
+			echo "FAILED: enrollsvc mgmt API call (json=$json,ret=$ret)"
+			failure=1
+		elif [[ $ret != 0 ]]; then
+			echo "ERROR: enrollment failed (ret=$ret)"
+			failure=1
+		else
+			echo "worker $1: swtpm $idx: enrolled"
+			echo 1 > ${swtpm_enrolled[$idx]}
 		fi
-		sleep $((waitsecs+=waitinc))
-	done
-	(cd ${worker_extracted[$1]} && tar xf ${worker_secrets[$1]})
-	./sbin/tpm2-attest verify-unsealed ${worker_extracted[$1]} \
-				>> ${worker_log[$1]} 2>&1 ||
-		(
-			echo "FAILED: post-attestation checks failed"
-			echo "Dumping 'tpm2-attest' output;"
-			cat ${worker_log[$1]}
-			exit 1
-		) || failure=1
-	echo "worker $1: swtpm $idx: attest"
+	elif [[ $((SRANDOM % 100)) -lt $SOAK_PC_ATTEST ]]; then
+		# Attest
+		local waitsecs=0
+		local waitinc=3
+		local waitcount=0
+		until ./sbin/tpm2-attest attest $HCP_CLIENT_ATTEST_URL \
+					> ${worker_secrets[$1]} \
+					2>> ${worker_log[$1]} ||
+				[[ $failure -eq 1 ]];
+		do
+			if [[ $((++waitcount)) -eq 4 ]]; then
+				echo "FAILED: attestation failed, worker $1"
+				failure=1
+			else
+				sleep $((waitsecs+=waitinc))
+			fi
+		done
+		if [[ $failure -eq 0 ]] && ! (cd ${worker_extracted[$1]} &&
+					tar xf ${worker_secrets[$1]}); then
+			echo "FAILED: attestation result wasn't a tarball"
+			failure=1
+		fi
+		if [[ $failure -eq 0 ]] && ! ./sbin/tpm2-attest verify-unsealed \
+					${worker_extracted[$1]} >> \
+					${worker_log[$1]} 2>&1; then
+			echo "FAILED: post-attestation verification failed"
+			failure=1
+		fi
+		[[ $failure -eq 0 ]] &&
+			echo "worker $1: swtpm $idx: attest" ||
+			true
+	else
+		# Unenroll
+		if ! json=$(python3 /hcp/swtpmsvc/enroll_api.py \
+					--api $HCP_SWTPMSVC_ENROLL_API \
+					delete \
+					"${swtpm_ekpubhash[$idx]}" 2>> \
+						${worker_log[$1]}); then
+			echo "FAILED: enrollsvc mgmt API 'delete' (json=$json)"
+			failure=1
+		elif ! $(echo "$json" | jq -e '.entries|length>0' >> \
+					${worker_log[$1]} 2>&1); then
+			echo "ERROR: unenrollment failed (json=$json)"
+			failure=1
+		else
+			echo "worker $1: swtpm $idx: unenrolled"
+			echo 0 > ${swtpm_enrolled[$idx]}
+		fi
+	fi
 	rm ${worker_swtpm[$1]}
-	rm ${worker_log[$1]}
-	rm ${worker_secrets[$1]}
+	rm -f ${worker_secrets[$1]}
 	rm -f ${worker_extracted[$1]}/*
+	[[ $failure -eq 0 ]] && rm -f ${worker_log[$1]} ||
+		echo "FAILURE in worker $1 using swtpm $idx"
 	swtpm_put $idx
 	return $failure
 }
 
-# The (backgrouned) worker loop
+# The (backgrounded) worker loop
 function worker_loop {
 	sleep 1
 	local loops=0
 	local failure=0
-	until [[ $loops -eq $NUM_LOOPS || $failiure -ne 0 ]]; do
+	until [[ $loops -eq $SOAK_NUM_LOOPS || $failure -ne 0 ]]; do
 		worker_item $1 || failure=1
 		loops=$((loops + 1))
 	done
 	[[ $failure -ne 0 ]] &&
 		touch ${worker_error[$1]} &&
-		exit 1
-	exit 0
+		return 1
+	return 0
 }
 
 # Launch (background) each worker
@@ -286,12 +363,12 @@ function worker_launch {
 # hiding it.
 function worker_on_exit {
 	[[ -f ${worker_error[$1]} ]] &&
-		rm ${worker_error[$1]} ]] &&
+		rm ${worker_error[$1]} &&
 		[[ -f ${worker_log[$1]} ]] &&
 		echo "Dumping worker $1 logfile" &&
 		cat ${worker_log[$1]}
 	[[ -f ${worker_log[$1]} ]] && rm ${worker_log[$1]}
-	[[ -f ${worker_swtpm[$1]} ]] && rm ${worker_swtmp[$1]}
+	[[ -f ${worker_swtpm[$1]} ]] && rm ${worker_swtpm[$1]}
 	[[ -f ${worker_secrets[$1]} ]] && rm ${worker_secrets[$1]}
 	[[ -d ${worker_extracted[$1]} ]] && rm -rf ${worker_extracted[$1]}
 	[[ -d ${worker_dir[$1]} ]] && rmdir ${worker_dir[$1]}
@@ -315,7 +392,7 @@ function exit_trapper {
 }
 trap exit_trapper EXIT ERR
 
-echo "Creating software TPMs"
+echo "Setting up software TPMs"
 swtpm_all swtpm_setup || exit 1
 
 echo "Starting software TPMs"
@@ -327,7 +404,7 @@ worker_all worker_launch || exit 1
 echo "Waiting for workers to exit"
 reaped=0
 total_failure=0
-until [[ $reaped -eq NUM_WORKERS || $failure -ne 0 ]]; do
+until [[ $reaped -eq SOAK_NUM_WORKERS || $failure -ne 0 ]]; do
 	failure=0
 	wait -n -p dead_pid ${worker_pid[@]} || failure=1
 	[[ $failure -ne 0 ]] &&
@@ -344,7 +421,7 @@ swtpm_all swtpm_stop || exit 1
 
 echo "Waiting for software TPMs to exit"
 reaped=0
-until [[ $reaped -eq NUM_SWTPMS || $failure -ne 0 ]]; do
+until [[ $reaped -eq SOAK_NUM_SWTPMS || $failure -ne 0 ]]; do
 	wait -n -p dead_pid ${swtpm_pid[@]} || true
 	reaped=$((reaped+1))
 	swtpm_all swtpm_remove $dead_pid

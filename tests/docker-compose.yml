@@ -3,6 +3,7 @@ version: "3.0"
 volumes:
     testenrolldb:
     testattestdb:
+    soaktpms:
 
 networks:
     testnetwork:
@@ -74,15 +75,17 @@ services:
         command: /hcp/soakhost/soak.sh
         volumes:
           - ../output/creds/enrollverif:/enrollverif:ro
+          - soaktpms:/swtpm_base
         networks:
           - testnetwork
         environment:
           - HCP_CLIENT_ATTEST_URL=http://attestsvc_hcp:8080
           - HCP_CLIENT_VERIFIER=/enrollverif
           - HCP_SWTPMSVC_ENROLL_API=http://enrollsvc_mgmt:5000
-          - NUM_SWTPMS=3
-          - NUM_WORKERS=1
-          - NUM_LOOPS=10
+          - SOAK_NUM_SWTPMS=6
+          - SOAK_NUM_WORKERS=2
+          - SOAK_NUM_LOOPS=20
+          - SOAK_PC_ATTEST=70
     soakhost_manual:
         extends: soakhost
         command: bash -i

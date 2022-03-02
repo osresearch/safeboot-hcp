@@ -5,7 +5,7 @@
 # if the test failed.
 
 function trapper {
-	docker-compose down -v
+	docker-compose down
 }
 trap trapper EXIT ERR
 

@@ -103,6 +103,7 @@ tests: $(TESTS)
 
 ifneq (,$(wildcard $(HCP_TESTS_OUT)))
 clean_tests:
+	$Qcd $(HCP_TESTS_SRC) && docker-compose down -v
 	$Qrmdir $(HCP_TESTS_OUT)
 clean: clean_tests
 endif
