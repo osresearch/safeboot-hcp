@@ -40,6 +40,11 @@ UWSGI_FLAGS=${HCP_ATTESTSVC_UWSGI_FLAGS:=--http :$HCP_ATTESTSVC_UWSGI_PORT --sta
 UWSGI_OPTS=${HCP_ATTESTSVC_UWSGI_OPTIONS:=--processes 2 --threads 2}
 [[ "$UWSGI_OPTS" == "none" ]] && UWSGI_OPTS=
 
+# uwsgi takes SIGTERM as an indication to ... reload! So we need to translate
+# SIGTERM to SIGQUIT to have the desired effect.
+echo "Setting SIGTERM->SIGQUIT trap handler"
+trap 'echo "Converting SIGTERM->SIGQUIT"; kill -QUIT $UPID' TERM
+
 TO_RUN="$UWSGI \
 	--plugin http \
 	--wsgi-file /safeboot/sbin/attest-server \
@@ -48,4 +53,6 @@ TO_RUN="$UWSGI \
 	$UWSGI_OPTS"
 
 echo "Running: $TO_RUN"
-$TO_RUN
+$TO_RUN &
+UPID=$!
+wait $UPID

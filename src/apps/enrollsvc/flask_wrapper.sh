@@ -39,5 +39,12 @@ TO_RUN="$UWSGI \
 	$UWSGI_FLAGS \
 	$UWSGI_OPTS"
 
+# uwsgi takes SIGTERM as an indication to ... reload! So we need to translate
+# SIGTERM to SIGQUIT to have the desired effect.
+echo "Setting SIGTERM->SIGQUIT trap handler"
+trap 'echo "Converting SIGTERM->SIGQUIT"; kill -QUIT $UPID' TERM
+
 echo "Running: $TO_RUN"
-$TO_RUN
+$TO_RUN &
+UPID=$!
+wait $UPID
