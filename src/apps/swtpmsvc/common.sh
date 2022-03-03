@@ -1,19 +1,16 @@
 # This is an include-only file. So no shebang header and no execute perms.
 
+. /hcp/common/hcp.sh
+
 set -e
 
 # Print the base configuration
 echo "Running '$0'" >&2
-echo "    HCP_SWTPMSVC_STATE_PREFIX=$HCP_SWTPMSVC_STATE_PREFIX" >&2
-echo " HCP_SWTPMSVC_ENROLL_HOSTNAME=$HCP_SWTPMSVC_ENROLL_HOSTNAME" >&2
+show_hcp_env >&2
 
-if [[ -z "$HCP_SWTPMSVC_STATE_PREFIX" || ! -d "$HCP_SWTPMSVC_STATE_PREFIX" ]]; then
-	echo "Error, HCP_SWTPMSVC_STATE_PREFIX (\"$HCP_SWTPMSVC_STATE_PREFIX\") is not a valid path" >&2
-	exit 1
-fi
-if [[ -z "$HCP_SWTPMSVC_ENROLL_HOSTNAME" ]]; then
-	echo "Error, HCP_SWTPMSVC_ENROLL_HOSTNAME (\"$HCP_SWTPMSVC_ENROLL_HOSTNAME\") is not set" >&2
-	exit 1
+mkdir -p $HCP_SWTPMSVC_STATE_PREFIX
+if [[ -n $HCP_SWTPMSVC_TPMSOCKET_DIR ]]; then
+	mkdir -p $HCP_SWTPMSVC_TPMSOCKET_DIR
 fi
 
 if [[ ! -d "/safeboot/sbin" ]]; then

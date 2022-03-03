@@ -13,18 +13,18 @@ if [[ -z "$HCP_ATTESTSVC_UPDATE_TIMER" ]]; then
 	echo "Error, HCP_ATTESTSVC_UPDATE_TIMER (\"$HCP_ATTESTSVC_UPDATE_TIMER\") must be set" >&2
 	exit 1
 fi
-echo "export HCP_ATTESTSVC_REMOTE_REPO=$HCP_ATTESTSVC_REMOTE_REPO" >> /etc/environment
-echo "export HCP_ATTESTSVC_UPDATE_TIMER=$HCP_ATTESTSVC_UPDATE_TIMER" >> /etc/environment
-echo "   HCP_ATTESTSVC_REMOTE_REPO=$HCP_ATTESTSVC_REMOTE_REPO" >&2
-echo "  HCP_ATTESTSVC_UPDATE_TIMER=$HCP_ATTESTSVC_UPDATE_TIMER" >&2
 
 # Handle lazy-initialization.
 if [[ ! -f $HCP_ATTESTSVC_STATE_PREFIX/initialized ]]; then
 	echo "Warning: state not initialized, initializing now" >&2
+	[[ ! -d $HCP_ATTESTSVC_STATE_PREFIX ]] &&
+		mkdir $HCP_ATTESTSVC_STATE_PREFIX || true
 	# This is the one-time init hook, so make sure the mounted dir has
 	# appropriate ownership
 	chown hcp_user:hcp_user $HCP_ATTESTSVC_STATE_PREFIX
-	drop_privs_hcp /hcp/attestsvc/init_clones.sh
+	# drop_privs_*() performs an 'exec su', so we run this in a child
+	# process.
+	(drop_privs_hcp /hcp/attestsvc/init_clones.sh)
 	touch $HCP_ATTESTSVC_STATE_PREFIX/initialized
 	echo "State now initialized" >&2
 fi
@@ -37,11 +37,6 @@ fi
 	exit 1) || exit 1
 
 
-echo "Setting SIGTERM trap handler"
-trap 'kill -TERM $UPID' TERM
-
 echo "Running 'attestsvc-repl' service"
 
-drop_privs_hcp /hcp/attestsvc/updater_loop.sh &
-UPID=$!
-wait $UPID
+drop_privs_hcp /hcp/attestsvc/updater_loop.sh

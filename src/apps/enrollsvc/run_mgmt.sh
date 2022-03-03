@@ -13,10 +13,14 @@
 
 	if [[ ! -f $HCP_ENROLLSVC_STATE_PREFIX/initialized ]]; then
 		echo "Warning: state not initialized, initializing now" >&2
+		[[ ! -d $HCP_ENROLLSVC_STATE_PREFIX ]] &&
+			mkdir $HCP_ENROLLSVC_STATE_PREFIX || true
 		# This is the one-time init hook, so make sure the mounted dir
 		# has appropriate ownership
 		chown db_user:db_user $HCP_ENROLLSVC_STATE_PREFIX
-		drop_privs_db /hcp/enrollsvc/init_repo.sh
+		# drop_privs_*() performs an 'exec su', so we run this in a
+		# child process.
+		(drop_privs_db /hcp/enrollsvc/init_repo.sh)
 		touch $HCP_ENROLLSVC_STATE_PREFIX/initialized
 		echo "State now initialized" >&2
 	fi
@@ -66,11 +70,11 @@ export GENCERT_CA_PRIV=$HCP_ENROLLSVC_GENCERT/CA.priv
 # environment stuff is done inside common.sh
 
 if [[ ! -f "$SIGNING_KEY_PUB" || ! -f "$SIGNING_KEY_PRIV" ]]; then
-	echo "Error, HCP_ENROLLSVC_SIGNER does not contain valid creds" >&2
+	echo "Error, HCP_ENROLLSVC_SIGNER ($HCP_ENROLLSVC_SIGNER) does not contain valid creds" >&2
 	exit 1
 fi
 if [[ ! -f "$GENCERT_CA_CERT" || ! -f "$GENCERT_CA_PRIV" ]]; then
-	echo "Error, HCP_ENROLLSVC_GENCERT does not contain valid creds" >&2
+	echo "Error, HCP_ENROLLSVC_GENCERT ($HCP_ENROLLSVC_GENCERT) does not contain valid creds" >&2
 	exit 1
 fi
 
@@ -84,9 +88,6 @@ fi
 
 # Append mgmt-specific settings to /etc/environment
 echo "# Values filled in by enrollsvc/run_mgmt.sh after credential-handling" >> /etc/environment
-echo "export HCP_ENROLLSVC_SIGNER=$HCP_ENROLLSVC_SIGNER" >> /etc/environment
-echo "export HCP_ENROLLSVC_GENCERT=$HCP_ENROLLSVC_GENCERT" >> /etc/environment
-echo "export HCP_ENROLLSVC_REALM=$HCP_ENROLLSVC_REALM" >> /etc/environment
 echo "export SIGNING_KEY_PUB=$SIGNING_KEY_PUB" >> /etc/environment
 echo "export SIGNING_KEY_PRIV=$SIGNING_KEY_PRIV" >> /etc/environment
 echo "export GENCERT_CA_CERT=$GENCERT_CA_CERT" >> /etc/environment
@@ -107,14 +108,11 @@ echo "export GENCERT_X509_TOOLING=OpenSSL" >> /safeboot/enroll.conf
 echo "export DIAGNOSTICS=$DIAGNOSTICS" >> /safeboot/enroll.conf
 
 # Print the additional configuration (beyond what common.sh prints)
-echo "               SIGNING_KEY_PRIV=$SIGNING_KEY_PRIV" >&2
-echo "                SIGNING_KEY_PUB=$SIGNING_KEY_PUB" >&2
-
-echo "Setting SIGTERM trap handler"
-trap 'kill -TERM $UPID' TERM
+echo "SIGNING_KEY_PRIV=$SIGNING_KEY_PRIV" >&2
+echo "SIGNING_KEY_PUB=$SIGNING_KEY_PUB" >&2
+echo "GENCERT_CA_CERT=$GENCERT_CA_CERT" >&2
+echo "GENCERT_CA_PRIV=$GENCERT_CA_PRIV" >&2
 
 echo "Running 'enrollsvc-mgmt' service"
 
-drop_privs_flask /hcp/enrollsvc/flask_wrapper.sh &
-UPID=$!
-wait $UPID
+drop_privs_flask /hcp/enrollsvc/flask_wrapper.sh

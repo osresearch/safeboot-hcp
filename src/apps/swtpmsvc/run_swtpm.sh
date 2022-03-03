@@ -4,7 +4,13 @@
 
 # Handle lazy-initialization.
 if [[ ! -f $HCP_SWTPMSVC_STATE_PREFIX/initialized ]]; then
+	if [[ -n $HCP_SWTPMSVC_NO_SETUP ]]; then
+		echo "Error: swtpmsvc state uninitialized" >&2
+		exit 1
+	fi
 	echo "Warning: state not initialized, initializing now" >&2
+	[[ ! -d $HCP_SWTPMSVC_STATE_PREFIX ]] &&
+		mkdir $HCP_SWTPMSVC_STATE_PREFIX || true
 	/hcp/swtpmsvc/setup_swtpm.sh >&2
 	if [[ ! -f $HCP_SWTPMSVC_STATE_PREFIX/initialized ]]; then
 		echo "Error: state initialization failed" >&2
@@ -23,25 +29,18 @@ TPMPORT2=9877
 (echo "Error: expected version $HCP_VER, but got '$state_version' instead" &&
 	exit 1) || exit 1
 
-echo "Running 'swtpmsvc' service (for $HCP_SWTPMSVC_ENROLL_HOSTNAME)"
-
-# Remove sockets on exit
-function cleanup_trap
-{
-	echo "Cleaning up sockets on exit"
-	rm -f $HCP_SOCKET
-	rm -f $HCP_SOCKET.ctrl
-}
-trap cleanup_trap EXIT
-
 # Start the software TPM
 
-if [[ -n "$HCP_SOCKET" ]]; then
+echo "Running 'swtpmsvc' service (for $HCP_SWTPMSVC_ENROLL_HOSTNAME)"
+
+if [[ -n "$HCP_SWTPMSVC_TPMSOCKET" ]]; then
+	echo "Listening on unixio,path=$HCP_SWTPMSVC_TPMSOCKET[.ctrl]"
 	exec swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
-		--server type=unixio,path=$HCP_SOCKET \
-		--ctrl type=unixio,path=$HCP_SOCKET.ctrl \
+		--server type=unixio,path=$HCP_SWTPMSVC_TPMSOCKET \
+		--ctrl type=unixio,path=$HCP_SWTPMSVC_TPMSOCKET.ctrl \
 		--flags startup-clear > /dev/null 2>&1
 else
+	echo "Listening on tcp,port=$TPMPORT1/$TPMPORT2"
 	exec swtpm socket --tpm2 --tpmstate dir=$HCP_SWTPMSVC_STATE_PREFIX/tpm \
 		--server type=tcp,bindaddr=0.0.0.0,port=$TPMPORT1 \
 		--ctrl type=tcp,bindaddr=0.0.0.0,port=$TPMPORT2 \

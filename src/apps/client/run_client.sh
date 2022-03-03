@@ -1,12 +1,15 @@
 #!/bin/bash
 
+. /hcp/common/hcp.sh
+
 set -e
 
 # Print the base configuration
 echo "Running '$0'"
-echo "         HCP_CLIENT_ATTEST_URL=$HCP_CLIENT_ATTEST_URL"
-echo "     HCP_CLIENT_TPM2TOOLS_TCTI=$HCP_CLIENT_TPM2TOOLS_TCTI"
-echo "           HCP_CLIENT_VERIFIER=$HCP_CLIENT_VERIFIER"
+show_hcp_env
+
+mkdir -p $HCP_CLIENT_VERIFIER
+mkdir -p $HCP_CLIENT_TPMSOCKET_DIR
 
 if [[ -z "$HCP_CLIENT_ATTEST_URL" ]]; then
 	echo "Error, HCP_CLIENT_ATTEST_URL (\"$HCP_CLIENT_ATTEST_URL\") is not set"

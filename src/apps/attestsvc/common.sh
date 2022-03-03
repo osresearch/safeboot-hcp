@@ -2,6 +2,8 @@
 # that for explanatory matter. (When the same comments apply here, they are
 # removed.)
 
+. /hcp/common/hcp.sh
+
 set -e
 
 if [[ `whoami` != "root" ]]; then
@@ -16,10 +18,7 @@ if [[ -z "$HCP_VER" ]]; then
 	echo "Error, HCP_VER (\"$HCP_VER\") must be set" >&2
 	exit 1
 fi
-if [[ -z "$HCP_ATTESTSVC_STATE_PREFIX" || ! -d "$HCP_ATTESTSVC_STATE_PREFIX" ]]; then
-	echo "Error, HCP_ATTESTSVC_STATE_PREFIX (\"$HCP_ATTESTSVC_STATE_PREFIX\") is not a valid path" >&2
-	exit 1
-fi
+mkdir -p $HCP_ATTESTSVC_STATE_PREFIX
 if [[ ! -d "/home/hcp_user" ]]; then
 	echo "Error, 'hcp_user' account missing or misconfigured" >&2
 	exit 1
@@ -49,23 +48,13 @@ fi
 if [[ `whoami` == "root" ]]; then
 	echo "# HCP attestsvc settings, put here so that non-root environments" >> /etc/environment
 	echo "# always get known-good values." >> /etc/environment
-	echo "export HCP_VER=$HCP_VER" >> /etc/environment
-	echo "export HCP_ATTESTSVC_STATE_PREFIX=$HCP_ATTESTSVC_STATE_PREFIX" >> /etc/environment
-	echo "export HCP_ATTESTSVC_UWSGI=$HCP_ATTESTSVC_UWSGI" >> /etc/environment
-	echo "export HCP_ATTESTSVC_UWSGI_FLAGS=$HCP_ATTESTSVC_UWSGI_FLAGS" >> /etc/environment
-	echo "export HCP_ATTESTSVC_UWSGI_PORT=$HCP_ATTESTSVC_UWSGI_PORT" >> /etc/environment
-	echo "export HCP_ATTESTSVC_UWSGI_OPTIONS=$HCP_ATTESTSVC_UWSGI_OPTIONS" >> /etc/environment
+	export_hcp_env >> /etc/environment
 	echo "export HCP_ENVIRONMENT_SET=1" >> /etc/environment
 fi
 
 # Print the base configuration
 echo "Running '$0'" >&2
-echo "                     HCP_VER=$HCP_VER" >&2
-echo "  HCP_ATTESTSVC_STATE_PREFIX=$HCP_ATTESTSVC_STATE_PREFIX" >&2
-echo "         HCP_ATTESTSVC_UWSGI=$HCP_ATTESTSVC_UWSGI" >&2
-echo "   HCP_ATTESTSVC_UWSGI_FLAGS=$HCP_ATTESTSVC_UWSGI_FLAGS" >&2
-echo "    HCP_ATTESTSVC_UWSGI_PORT=$HCP_ATTESTSVC_UWSGI_PORT" >&2
-echo " HCP_ATTESTSVC_UWSGI_OPTIONS=$HCP_ATTESTSVC_UWSGI_OPTIONS" >&2
+show_hcp_env >&2
 
 # Basic functions
 
@@ -84,5 +73,5 @@ function expect_hcp_user {
 }
 
 function drop_privs_hcp {
-	su -c "$*" - hcp_user
+	exec su -c "$*" - hcp_user
 }

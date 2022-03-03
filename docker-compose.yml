@@ -1,6 +1,6 @@
 # Using this version string helps with some older docker-compose versions that
-# we regularly encounter.
-version: "3.0"
+# we regularly encounter. It also ensures the 'extend' feature works.
+version: "2.4"
 
 # NB: use of this file by 'docker-compose' depends on configuration settings
 # found in 'defaults.env'. This means you must either;
@@ -23,7 +23,7 @@ version: "3.0"
 #
 # PLEASE READ 'defaults.env'!! It not only provides settings, it also provides
 # a lot of explanatory content. (Which is the reason this comment is the last
-# one you'll see in this file.)
+# piece of documentation you'll see in this file.)
 
 volumes:
     enrolldb:
@@ -41,7 +41,7 @@ services:
         command: /hcp/enrollsvc/run_mgmt.sh
         volumes:
           - enrolldb:${HCP_ENROLLSVC_STATE_PREFIX}:rw
-          - ${HCP_CRED_ENROLL_SIGNATURE}:${HCP_ENROLLSVC_SIGNER}:ro
+          - ${HCP_CRED_ENROLL_SIGNER}:${HCP_ENROLLSVC_SIGNER}:ro
           - ${HCP_CRED_ENROLL_X509_CA}:${HCP_ENROLLSVC_GENCERT}:ro
         networks:
           - hcpnetwork
@@ -81,7 +81,7 @@ services:
           - HCP_ATTESTSVC_REMOTE_REPO=${HCP_ATTESTSVC_REMOTE_REPO}
           - HCP_ATTESTSVC_UPDATE_TIMER=${HCP_ATTESTSVC_UPDATE_TIMER}
         healthcheck:
-            test: test -f /attestdb/initialized && test ! -f /attestdb/transient-failure
+            test: /hcp/attestsvc/healthcheck_repl.sh
             timeout: 1s
             interval: 2s
 
@@ -104,19 +104,25 @@ services:
         command: /hcp/swtpmsvc/run_swtpm.sh
         volumes:
           - swtpm:${HCP_SWTPMSVC_STATE_PREFIX}
-          - tpmsocket:/tpmsocket
+          - tpmsocket:${HCP_SWTPMSVC_TPMSOCKET_DIR}
         networks:
           - hcpnetwork
         environment:
           - HCP_SWTPMSVC_STATE_PREFIX=${HCP_SWTPMSVC_STATE_PREFIX}
-          - HCP_SWTPMSVC_ENROLL_HOSTNAME=${HCP_SWTPMSVC_ENROLL_HOSTNAME}
-          - HCP_SOCKET=/tpmsocket/tpm
-          - HCP_SWTPMSVC_ENROLL_API=${HCP_SWTPMSVC_ENROLL_API}
+          - HCP_SWTPMSVC_NO_SETUP=${HCP_SWTPMSVC_NO_SETUP}
           - HCP_SWTPMSVC_NO_ENROLL=${HCP_SWTPMSVC_NO_ENROLL}
+          - HCP_SWTPMSVC_ENROLL_HOSTNAME=${HCP_SWTPMSVC_ENROLL_HOSTNAME}
+          - HCP_SWTPMSVC_ENROLL_API=${HCP_SWTPMSVC_ENROLL_API}
+          - HCP_SWTPMSVC_TPMSOCKET_DIR=${HCP_SWTPMSVC_TPMSOCKET_DIR}
+          - HCP_SWTPMSVC_TPMSOCKET=${HCP_SWTPMSVC_TPMSOCKET}
         healthcheck:
             test: /hcp/swtpmsvc/healthcheck.sh
             timeout: 1s
             interval: 2s
+    swtpmsvc_no_setup:
+        extends: swtpmsvc
+        environment:
+          - HCP_SWTPMSVC_NO_SETUP=1
     swtpmsvc_setup:
         extends: swtpmsvc
         command: /hcp/swtpmsvc/setup_swtpm.sh
@@ -129,11 +135,60 @@ services:
         image: ${HCP_IMAGE_CLIENT}
         command: /hcp/client/run_client.sh
         volumes:
-          - tpmsocket:/tpmsocket
+          - tpmsocket:${HCP_CLIENT_TPMSOCKET_DIR}
           - ${HCP_CRED_ENROLL_VERIFIER}:${HCP_CLIENT_VERIFIER}:ro
         networks:
           - hcpnetwork
         environment:
-          - HCP_CLIENT_ATTEST_URL=http://attestsvc_hcp:8080
-          - HCP_CLIENT_TPM2TOOLS_TCTI=swtpm:path=/tpmsocket/tpm
+          - HCP_CLIENT_ATTEST_URL=${HCP_CLIENT_ATTEST_URL}
+          - HCP_CLIENT_TPM2TOOLS_TCTI=${HCP_CLIENT_TPM2TOOLS_TCTI}
           - HCP_CLIENT_VERIFIER=${HCP_CLIENT_VERIFIER}
+          - HCP_CLIENT_TPMSOCKET_DIR=${HCP_CLIENT_TPMSOCKET_DIR}
+
+    # unusable configuration, to facilitate extending by caboodle_services
+    # (which adds volume mounts, like 'client' does) and caboodle_alone (which
+    # overrides some env-vars).
+    caboodle_baseline:
+        image: ${HCP_IMAGE_CABOODLE}
+        command: ${HCP_CABOODLE_DEFAULT_CMD}
+        networks:
+          - hcpnetwork
+        environment:
+          - HCP_ENROLLSVC_STATE_PREFIX=${HCP_ENROLLSVC_STATE_PREFIX}
+          - HCP_ENROLLSVC_SIGNER=${HCP_ENROLLSVC_SIGNER}
+          - HCP_ENROLLSVC_GENCERT=${HCP_ENROLLSVC_GENCERT}
+          - HCP_ENROLLSVC_REALM=${HCP_ENROLLSVC_REALM}
+          - HCP_ATTESTSVC_STATE_PREFIX=${HCP_ATTESTSVC_STATE_PREFIX}
+          - HCP_ATTESTSVC_REMOTE_REPO=${HCP_ATTESTSVC_REMOTE_REPO}
+          - HCP_ATTESTSVC_UPDATE_TIMER=${HCP_ATTESTSVC_UPDATE_TIMER}
+          - HCP_SWTPMSVC_STATE_PREFIX=${HCP_SWTPMSVC_STATE_PREFIX}
+          - HCP_SWTPMSVC_ENROLL_API=${HCP_SWTPMSVC_ENROLL_API}
+          - HCP_SWTPMSVC_NO_ENROLL=${HCP_SWTPMSVC_NO_ENROLL}
+          - HCP_SWTPMSVC_ENROLL_HOSTNAME=${HCP_SWTPMSVC_ENROLL_HOSTNAME}
+          - HCP_SWTPMSVC_TPMSOCKET_DIR=${HCP_SWTPMSVC_TPMSOCKET_DIR}
+          - HCP_SWTPMSVC_TPMSOCKET=${HCP_SWTPMSVC_TPMSOCKET}
+          - HCP_CLIENT_ATTEST_URL=${HCP_CLIENT_ATTEST_URL}
+          - HCP_CLIENT_TPM2TOOLS_TCTI=${HCP_CLIENT_TPM2TOOLS_TCTI}
+          - HCP_CLIENT_VERIFIER=${HCP_CLIENT_VERIFIER}
+          - HCP_CLIENT_TPMSOCKET_DIR=${HCP_CLIENT_TPMSOCKET_DIR}
+          - HCP_CABOODLE_SLEEP_IF_FAIL=${HCP_CABOODLE_SLEEP_IF_FAIL}
+          - HCP_SOAK_PREFIX=${HCP_SOAK_PREFIX}
+          - HCP_SOAK_NUM_SWTPMS=${HCP_SOAK_NUM_SWTPMS}
+          - HCP_SOAK_NUM_WORKERS=${HCP_SOAK_NUM_WORKERS}
+          - HCP_SOAK_NUM_LOOPS=${HCP_SOAK_NUM_LOOPS}
+          - HCP_SOAK_PC_ATTEST=${HCP_SOAK_PC_ATTEST}
+          - HCP_SOAK_NO_CREATE=${HCP_SOAK_NO_CREATE}
+    caboodle_services:
+        extends: caboodle_baseline
+        volumes:
+          - tpmsocket:${HCP_CLIENT_TPMSOCKET_DIR}
+          - ${HCP_CRED_ENROLL_VERIFIER}:${HCP_CLIENT_VERIFIER}:ro
+    caboodle_alone:
+        extends: caboodle_baseline
+        environment:
+          - HCP_CABOODLE_ALONE=1
+          - HCP_ATTESTSVC_REMOTE_REPO=${HCP_CABOODLE_ATTESTSVC_REMOTE_REPO}
+          - HCP_SWTPMSVC_ENROLL_API=${HCP_CABOODLE_SWTPMSVC_ENROLL_API}
+          - HCP_CLIENT_ATTEST_URL=${HCP_CABOODLE_CLIENT_ATTEST_URL}
+    caboodle:
+        extends: caboodle_alone

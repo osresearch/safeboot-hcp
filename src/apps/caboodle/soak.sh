@@ -31,13 +31,13 @@ function run_all {
 # Handle a set of software TPMs #
 #################################
 
-[[ -z $SOAK_NUM_SWTPMS ]] &&
-	echo "ERROR, set SOAK_NUM_SWTPMS" &&
+[[ -z $HCP_SOAK_NUM_SWTPMS ]] &&
+	echo "ERROR, set HCP_SOAK_NUM_SWTPMS" &&
 	exit 1 ||
 	true
 
 # Where their state goes (including sockets)
-BASE_SWTPM=/swtpm_base
+BASE_SWTPM=${HCP_SOAK_PREFIX:=/swtpm_base}
 mkdir -p $BASE_SWTPM
 
 # The arrays for per-swtpm state
@@ -55,7 +55,7 @@ declare -a swtpm_ekpubhash
 function swtpm_all {
 	torun=$1
 	shift
-	run_all $SOAK_NUM_SWTPMS $torun $@
+	run_all $HCP_SOAK_NUM_SWTPMS $torun $@
 }
 
 # Given a swtpm, calculate the ekpubhash, then query enrollsvc to see if it's
@@ -82,6 +82,10 @@ function swtpm_setup {
 	swtpm_lock[$1]=$BASE_SWTPM/lock_$1
 	local exitcode=0
 	if [[ ! -f ${swtpm_prefix[$1]}/initialized ]]; then
+		if [[ -n $HCP_SOAK_NO_CREATE ]]; then
+			echo "FAILED, NO_CREATE set but swtpm doesn't exist"
+			return 1
+		fi
 		mkdir -p ${swtpm_prefix[$1]}
 		# Run the setup
 		echo -n "Creating swtpm $1 ... "
@@ -116,11 +120,11 @@ function swtpm_setup {
 function swtpm_start {
 	echo -n "Starting swtpm $1 ... "
 	export HCP_SWTPMSVC_STATE_PREFIX=${swtpm_prefix[$1]}
-	export HCP_SOCKET=${swtpm_socket[$1]}
-	export HCP_SWTPMSVC_ENROLL_HOSTNAME=${swtpm_hostname[$1]}
+	export HCP_SWTPMSVC_TPMSOCKET=${swtpm_socket[$1]}
+	export HCP_SWTPMSVC_NO_SETUP=1
 	/hcp/swtpmsvc/run_swtpm.sh > ${swtpm_log[$1]} 2>&1 &
 	swtpm_pid[$1]=$!
-	export TPM2TOOLS_TCTI=swtpm:path=$HCP_SOCKET
+	export TPM2TOOLS_TCTI=swtpm:path=$HCP_SWTPMSVC_TPMSOCKET
 	local waitsecs=0
 	local waitinc=1
 	local waitcount=0
@@ -139,7 +143,7 @@ function swtpm_start {
 	echo "SUCCESS (pid=${swtpm_pid[$1]})"
 	rm $pcrread_log
 	# Sneaky hack, see corresponding note in
-	# src/aps/client/run_client.sh
+	# src/apps/client/run_client.sh
 	tpm2_dictionarylockout --clear-lockout > /dev/null 2>&1 || true
 }
 
@@ -165,10 +169,10 @@ function swtpm_on_exit {
 # Find an unused swtpm and lock it
 function swtpm_get {
 	local resultpath=$1
-	i=$((SOAK_NUM_SWTPMS + 1))
+	i=$((HCP_SOAK_NUM_SWTPMS + 1))
 	local retries=0
 	until false; do
-		i=$((SRANDOM % SOAK_NUM_SWTPMS))
+		i=$((SRANDOM % HCP_SOAK_NUM_SWTPMS))
 		mkdir ${swtpm_lock[$i]} > /dev/null 2>&1 &&
 			break
 		if [[ $((++retries)) -eq 10 ]]; then
@@ -197,17 +201,17 @@ function swtpm_remove {
 ########################################
 
 # How many workers, and how many loops they run
-[[ -z $SOAK_NUM_WORKERS ]] &&
-	echo "ERROR, set SOAK_NUM_WORKERS" &&
+[[ -z $HCP_SOAK_NUM_WORKERS ]] &&
+	echo "ERROR, set HCP_SOAK_NUM_WORKERS" &&
 	exit 1 ||
 	true
-[[ -z $SOAK_NUM_LOOPS ]] &&
-	echo "ERROR, set SOAK_NUM_LOOPS" &&
+[[ -z $HCP_SOAK_NUM_LOOPS ]] &&
+	echo "ERROR, set HCP_SOAK_NUM_LOOPS" &&
 	exit 1 ||
 	true
 
-if [[ $SOAK_NUM_SWTPMS -lt $SOAK_NUM_WORKERS ]]; then
-	echo "Error, SOAK_NUM_SWTPMS ($SOAK_NUM_SWTPMS) < SOAK_NUM_WORKERS ($SOAK_NUM_WORKERS)"
+if [[ $HCP_SOAK_NUM_SWTPMS -lt $HCP_SOAK_NUM_WORKERS ]]; then
+	echo "Error, HCP_SOAK_NUM_SWTPMS ($HCP_SOAK_NUM_SWTPMS) < HCP_SOAK_NUM_WORKERS ($HCP_SOAK_NUM_WORKERS)"
 	exit 1
 fi
 
@@ -228,7 +232,7 @@ declare -a worker_error
 function worker_all {
 	torun=$1
 	shift
-	run_all $SOAK_NUM_WORKERS $torun $@
+	run_all $HCP_SOAK_NUM_WORKERS $torun $@
 }
 
 # A single item of work, within the worker_loop
@@ -239,7 +243,7 @@ function worker_item {
 	export TPM2TOOLS_TCTI=swtpm:path=${swtpm_socket[$idx]}
 	# Choose what work we'll do. If the swtpm isn't enrolled, easy, we'll
 	# enroll it. Otherwise, we will either unenroll it or attest, based on
-	# SOAK_PC_ATTEST. "PC"=="PerCent", meaning if it's 0 then we always
+	# HCP_SOAK_PC_ATTEST. "PC"=="PerCent", meaning if it's 0 then we always
 	# unenroll, if it's 100, we always attest, and we can range between
 	# those extremes.
 	local failure=0
@@ -264,7 +268,7 @@ function worker_item {
 			echo "worker $1: swtpm $idx: enrolled"
 			echo 1 > ${swtpm_enrolled[$idx]}
 		fi
-	elif [[ $((SRANDOM % 100)) -lt $SOAK_PC_ATTEST ]]; then
+	elif [[ $((SRANDOM % 100)) -lt $HCP_SOAK_PC_ATTEST ]]; then
 		# Attest
 		local waitsecs=0
 		local waitinc=3
@@ -327,7 +331,7 @@ function worker_loop {
 	sleep 1
 	local loops=0
 	local failure=0
-	until [[ $loops -eq $SOAK_NUM_LOOPS || $failure -ne 0 ]]; do
+	until [[ $loops -eq $HCP_SOAK_NUM_LOOPS || $failure -ne 0 ]]; do
 		worker_item $1 || failure=1
 		loops=$((loops + 1))
 	done
@@ -404,7 +408,7 @@ worker_all worker_launch || exit 1
 echo "Waiting for workers to exit"
 reaped=0
 total_failure=0
-until [[ $reaped -eq SOAK_NUM_WORKERS || $failure -ne 0 ]]; do
+until [[ $reaped -eq HCP_SOAK_NUM_WORKERS || $failure -ne 0 ]]; do
 	failure=0
 	wait -n -p dead_pid ${worker_pid[@]} || failure=1
 	[[ $failure -ne 0 ]] &&
@@ -421,7 +425,7 @@ swtpm_all swtpm_stop || exit 1
 
 echo "Waiting for software TPMs to exit"
 reaped=0
-until [[ $reaped -eq SOAK_NUM_SWTPMS || $failure -ne 0 ]]; do
+until [[ $reaped -eq HCP_SOAK_NUM_SWTPMS || $failure -ne 0 ]]; do
 	wait -n -p dead_pid ${swtpm_pid[@]} || true
 	reaped=$((reaped+1))
 	swtpm_all swtpm_remove $dead_pid

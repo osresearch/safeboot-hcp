@@ -1,29 +1,24 @@
 #!/bin/bash
 
-set -e
+. /hcp/caboodle/hcp.sh
 
-# NOTES
-#  - the processes started by this test do not get stopped, so attempting to
-#    run it a second time will fail unless you first kill them manually.
-#  - however, exiting the container will stop them, and will also destroy all
-#    state.
-#  - we _could_ try to wait till services are truly ready before running other
-#    services that depend on them, but ... nah, let's just sleep for a second
-#    instead.
-
-# HCP Enrollment Service.
-echo "Starting enrollsvc::run_mgmt.sh"
-/hcp/enrollsvc/run_mgmt.sh > emgmt.stdout 2> emgmt.stderr &
-echo "Starting enrollsvc::run_repl.sh"
-/hcp/enrollsvc/run_repl.sh > erepl.stdout 2> erepl.stderr &
-
-echo "Starting attestsvc::run_repl.sh"
-/hcp/attestsvc/run_repl.sh > arepl.stdout 2> arepl.stderr &
-echo "Starting attestsvc::run_hcp.sh"
-/hcp/attestsvc/run_hcp.sh > ahcp.stdout 2> ahcp.stderr &
-
-echo "Starting swtpmsvc::run_swtpm.sh"
-/hcp/swtpmsvc/run_swtpm.sh > swtpm.stdout 2> swtpm.stderr &
+# we only start/stop services if HCP_CABOODLE_ALONE is set, and even then, only
+# if the user hasn't been starting/stopping things themselves!
+if [[ -n $HCP_CABOODLE_ALONE ]] && ! hcp_services_any_started; then
+	echo "Automatically starting/stopping services"
+	trap hcp_services_stop EXIT ERR
+	hcp_services_start || exit 1
+fi
 
 echo "Starting client::run_client.sh"
-/hcp/client/run_client.sh
+/hcp/client/run_client.sh > client.out 2>&1 ||
+(
+	echo "Hmmm, client failed. Dumping output;"
+	cat client.out
+	echo "Sleeping $HCP_CABOODLE_SLEEP_IF_FAIL seconds"
+	echo "(perhaps use 'docker[-compose] exec [...]' to inspect)"
+	sleep $HCP_CABOODLE_SLEEP_IF_FAIL
+	exit 1
+)
+
+echo "Success"

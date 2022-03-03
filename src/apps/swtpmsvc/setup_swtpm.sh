@@ -4,10 +4,6 @@
 
 echo "$HCP_VER" > $HCP_SWTPMSVC_STATE_PREFIX/version
 
-# common.sh takes care of HCP_SWTPMSVC_STATE_PREFIX and STATE_HOSTNAME. We also
-# need HCP_SWTPMSVC_ENROLL_API when doing the setup.
-echo "      HCP_SWTPMSVC_ENROLL_API=$HCP_SWTPMSVC_ENROLL_API" >&2
-
 # Produce to "tpm-temp", and only move it to "tpm" if we make it all the way to
 # the bottom. E.g. if the enrollsvc can't be reached within our
 # retries/timeouts, we'd rather bail out with nothing than have an initialized
@@ -21,7 +17,7 @@ function trapper {
 }
 trap trapper EXIT ERR
 
-echo "Setting up a software TPM for $HCP_SWTPMSVC_ENROLL_HOSTNAME"
+echo "Setting up a software TPM"
 
 # Initialize a software TPM
 swtpm_setup --tpm2 --createek --tpmstate $TPMDIR --config /dev/null
@@ -50,8 +46,15 @@ cat $TPMDIR/ek.pem
 kill $THEPID
 
 if [[ -n "$HCP_SWTPMSVC_ENROLL_API" && -z "$HCP_SWTPMSVC_NO_ENROLL" ]]; then
-# Now, enroll this TPM/host combination with the enrollment service.  The
-# enroll_api.py script hits the API endpoint for us.
+	# Now, enroll this TPM/host combination with the enrollment service.
+	# The enroll_api.py script hits the API endpoint for us.
+
+	if [[ -z "$HCP_SWTPMSVC_ENROLL_HOSTNAME" ]]; then
+		echo "Error, HCP_SWTPMSVC_ENROLL_HOSTNAME (\"$HCP_SWTPMSVC_ENROLL_HOSTNAME\") is not set" >&2
+		exit 1
+	fi
+	echo "Enrolling swtpm hostname: $HCP_SWTPMSVC_ENROLL_HOSTNAME" >&2
+
 	waitsecs=0
 	waitinc=3
 	waitcount=0

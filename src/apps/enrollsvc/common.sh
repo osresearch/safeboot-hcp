@@ -7,6 +7,8 @@
 # the attestation service nodes, so that they make the same directory-layout
 # (and semantic) assumptions.
 
+. /hcp/common/hcp.sh
+
 set -e
 
 # A note about security. We priv-sep the flask app (that implements the URL
@@ -56,10 +58,6 @@ fi
 if [[ -z "$HCP_VER" ]]; then
 	echo "Error, HCP_VER must be set" >&2
 fi
-if [[ -z "$HCP_ENROLLSVC_STATE_PREFIX" || ! -d "$HCP_ENROLLSVC_STATE_PREFIX" ]]; then
-	echo "Error, HCP_ENROLLSVC_STATE_PREFIX (\"$HCP_ENROLLSVC_STATE_PREFIX\") is not a valid path" >&2
-	exit 1
-fi
 if [[ ! -d "/home/db_user" ]]; then
 	echo "Error, 'db_user' account missing or misconfigured" >&2
 	exit 1
@@ -98,30 +96,13 @@ if [[ `whoami` == "root" ]]; then
 	chmod 644 /etc/environment
 	echo "# HCP enrollsvc settings, put here so that non-root environments" >> /etc/environment
 	echo "# always get known-good values, especially via sudo!" >> /etc/environment
-	echo "export HCP_VER=$HCP_VER" >> /etc/environment
-	echo "export HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >> /etc/environment
-	echo "export HCP_ENROLLSVC_UWSGI=$HCP_ENROLLSVC_UWSGI" >> /etc/environment
-	echo "export HCP_ENROLLSVC_UWSGI_PORT=$HCP_ENROLLSVC_UWSGI_PORT" >> /etc/environment
-	echo "export HCP_ENROLLSVC_UWSGI_FLAGS=$HCP_ENROLLSVC_UWSGI_FLAGS" >> /etc/environment
-	echo "export HCP_ENROLLSVC_UWSGI_OPTIONS=$HCP_ENROLLSVC_UWSGI_OPTIONS" >> /etc/environment
-	echo "export HCP_ENROLLSVC_GITDAEMON=$HCP_ENROLLSVC_GITDAEMON" >> /etc/environment
-	echo "export HCP_ENROLLSVC_GITDAEMON_FLAGS=$HCP_ENROLLSVC_GITDAEMON_FLAGS" >> /etc/environment
+	export_hcp_env >> /etc/environment
 	echo "export HCP_ENVIRONMENT_SET=1" >> /etc/environment
 fi
 
 # Print the base configuration
 echo "Running '$0'" >&2
-echo "                        HCP_VER=$HCP_VER" >&2
-echo "     HCP_ENROLLSVC_STATE_PREFIX=$HCP_ENROLLSVC_STATE_PREFIX" >&2
-echo "                    DB_IN_SETUP=$DB_IN_SETUP" >&2
-echo "           HCP_ENROLLSVC_SIGNER=$HCP_ENROLLSVC_SIGNER" >&2
-echo "          HCP_ENROLLSVC_GENCERT=$HCP_ENROLLSVC_GENCERT" >&2
-echo "            HCP_ENROLLSVC_UWSGI=$HCP_ENROLLSVC_UWSGI" >&2
-echo "       HCP_ENROLLSVC_UWSGI_PORT=$HCP_ENROLLSVC_UWSGI_PORT" >&2
-echo "      HCP_ENROLLSVC_UWSGI_FLAGS=$HCP_ENROLLSVC_UWSGI_FLAGS" >&2
-echo "    HCP_ENROLLSVC_UWSGI_OPTIONS=$HCP_ENROLLSVC_UWSGI_OPTIONS" >&2
-echo "        HCP_ENROLLSVC_GITDAEMON=$HCP_ENROLLSVC_GITDAEMON" >&2
-echo "  HCP_ENROLLSVC_GITDAEMON_FLAGS=$HCP_ENROLLSVC_GITDAEMON_FLAGS" >&2
+show_hcp_env >&2
 
 # Derive more configuration using these constants
 REPO_NAME=enrolldb.git
@@ -167,11 +148,11 @@ function drop_privs_db {
 	# only applies during one-time initialization whereas the other
 	# settings apply longer term. (The fact this is only used as we drop
 	# from root to non-root also means it's OK.)
-	su --whitelist-environment DB_IN_SETUP -c "$*" - db_user
+	exec su --whitelist-environment DB_IN_SETUP -c "$*" - db_user
 }
 
 function drop_privs_flask {
-	su -c "$*" - flask_user
+	exec su -c "$*" - flask_user
 }
 
 function repo_cmd_lock {

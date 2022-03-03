@@ -94,9 +94,21 @@ $(eval $(call app_add,client,$(HCP_APPS_SRC)/client/,hcp.Dockerfile))
 # Caboodle #
 ############
 
-# This is a union of the other apps, plus our own bits
-
-$(eval $(call app_create,caboodle,))
+# This is a union of the other apps, plus our own bits. Note that we need _at
+# build time_ to create a couple of directories that are usually (when the apps
+# are running in their native, non-caboodle form) provided at run-time, not
+# build-time. To accomplish this slight of hand, we extract the values from
+# defaults.env and pass them into the docker-build. If you're doing curious
+# things that mean you specify different values at run-time than what is in
+# defaults.env, then presumably you can also pass in configuration variables
+# (and/or mount volumes into the expected places) for this not to be a problem.
+$(eval $(shell bash -c 'source defaults.env && echo "HCP_ENROLLSVC_SIGNER := $$HCP_ENROLLSVC_SIGNER"'))
+$(eval $(shell bash -c 'source defaults.env && echo "HCP_ENROLLSVC_GENCERT := $$HCP_ENROLLSVC_GENCERT"'))
+$(eval $(shell bash -c 'source defaults.env && echo "HCP_CLIENT_VERIFIER := $$HCP_CLIENT_VERIFIER"'))
+$(eval $(call app_create,caboodle,\
+	--build-arg HCP_ENROLLSVC_SIGNER=$(HCP_ENROLLSVC_SIGNER) \
+	--build-arg HCP_ENROLLSVC_GENCERT=$(HCP_ENROLLSVC_GENCERT) \
+	--build-arg HCP_CLIENT_VERIFIER=$(HCP_CLIENT_VERIFIER)))
 # These dependencies ensure that the "docker build" won't run until the sources
 # for all the component containers are replicated / up-to-date.
 $(HCP_APPS_OUT)/created.caboodle: $(HCP_APPS_OUT)/created.enrollsvc
