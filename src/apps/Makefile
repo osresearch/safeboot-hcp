@@ -33,14 +33,14 @@ $(HCP_APPS_OUT)/created.$1:
 $1: $(HCP_APPS_OUT)/created.$1
 ALL += $1
 APPS += $1
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_APPS_OUT)/created.$1,\
+	$(HCP_DSPACE)$1$(HCP_DTAG),\
+	apps_$1,\
+	clean_$1))
 ifneq (,$(wildcard $(HCP_APPS_OUT)/$1))
 clean_$1:
-ifneq (,$(wildcard $(HCP_APPS_OUT)/created.$1))
-	$Qecho "Removing container image $1 ($(HCP_DSPACE)$1$(HCP_DTAG))"
-	$Qdocker image rm $(HCP_DSPACE)$1$(HCP_DTAG)
-	rm $(HCP_APPS_OUT)/created.$1
-endif
-	rm -rf $(HCP_APPS_OUT)/$1
+	$Qrm -rf $(HCP_APPS_OUT)/$1
 clean_apps: clean_$1
 endif
 $(foreach i,$(shell ls -1 $(HCP_APPS_SRC)/$1 | grep -v "Dockerfile"),\

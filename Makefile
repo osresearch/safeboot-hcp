@@ -26,16 +26,6 @@ ifndef HCP_RELAX
 HCP_DEPS_COMMON := $(TOP)/Makefile $(TOP)/settings.mk
 endif
 
-########################
-# Detect current state #
-########################
-
-# To generate rules in smarter ways, capture a list of images that already
-# exist.
-HCP_EXISTING_IMAGES := $(shell docker image ls \
-			--filter label=$(HCP_DSPACE)all \
-			--format "{{.Repository}}:{{.Tag}}" 2> /dev/null)
-
 ###############
 # Build logic #
 ###############

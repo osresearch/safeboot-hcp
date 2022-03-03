@@ -70,6 +70,11 @@ $(HCP_BASE_OUT)/0import.built:
 	$Qcat $(HCP_BASE_OUT)/0import.Dockerfile | \
 		docker build -t $(HCP_BASE0_DNAME) -
 	$Qtouch $@
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_BASE_OUT)/0import.built,\
+	$(HCP_BASE0_DNAME),\
+	base_0import,\
+	clean_base))
 
 # LAYER: 1apt-source
 
@@ -92,6 +97,11 @@ $(HCP_BASE_OUT)/1apt-source.built:
 	               -f $(HCP_BASE_OUT)/1apt-source.Dockerfile \
 	               $(HCP_BASE_SRC)/1apt-source-context/
 	$Qtouch $@
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_BASE_OUT)/1apt-source.built,\
+	$(HCP_BASE1_DNAME),\
+	base_1apt-source,\
+	clean_base))
 
 endif # HCP_1APT_ENABLE
 
@@ -136,6 +146,11 @@ $(HCP_BASE_OUT)/2apt-usable.built:
 		       --build-arg HCP_APT_PROXY=$(HCP_APT_PROXY) \
 	               $(HCP_BASE_2APT_OUT)/
 	$Qtouch $@
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_BASE_OUT)/2apt-usable.built,\
+	$(HCP_BASE2_DNAME),\
+	base_2apt-usable,\
+	clean_base))
 
 # LAYER: 3add-cacerts
 
@@ -171,6 +186,11 @@ $(HCP_BASE_OUT)/3add-cacerts.built:
 	               -f $(HCP_BASE_OUT)/3add-cacerts.Dockerfile \
 	               $(HCP_BASE_3CA_OUT)/
 	$Qtouch $@
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_BASE_OUT)/3add-cacerts.built,\
+	$(HCP_BASE3_DNAME),\
+	base_3add-cacerts,\
+	clean_base))
 
 endif # HCP_3ADD_CACERTS_ENABLE
 
@@ -212,33 +232,23 @@ $(HCP_BASE_OUT)/4platform.built:
 		-f $(HCP_BASE_OUT)/4platform.Dockerfile \
 		$(HCP_BASE_SRC)/4platform-context/
 	$Qtouch $@
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_BASE_OUT)/4platform.built,\
+	$(HCP_BASE4_DNAME),\
+	base_4platform,\
+	clean_base))
 
 # Cleanup
 ifneq (,$(wildcard $(HCP_BASE_OUT)))
 clean_base: | preclean
-ifneq (,$(filter $(HCP_BASE4_DNAME),$(HCP_EXISTING_IMAGES)))
-	$Qdocker image rm $(HCP_BASE4_DNAME)
-endif
-	$Qrm -f $(HCP_BASE_OUT)/4platform.*
-ifneq (,$(filter $(HCP_BASE3_DNAME),$(HCP_EXISTING_IMAGES)))
-	$Qdocker image rm $(HCP_BASE3_DNAME)
-endif
+	$Qrm -f $(HCP_BASE_OUT)/4platform.Dockerfile
 	$Qrm -f $(HCP_BASE_OUT)/3add-cacerts.*
 	$Qrm -rf $(HCP_BASE_3CA_OUT)
-ifneq (,$(filter $(HCP_BASE2_DNAME),$(HCP_EXISTING_IMAGES)))
-	$Qdocker image rm $(HCP_BASE2_DNAME)
-endif
-	$Qrm -f $(HCP_BASE_OUT)/2apt-usable.*
+	$Qrm -f $(HCP_BASE_OUT)/2apt-usable.Dockerfile
 	$Qrm -rf $(HCP_BASE_2APT_OUT)
-ifneq (,$(filter $(HCP_BASE1_DNAME),$(HCP_EXISTING_IMAGES)))
-	$Qdocker image rm $(HCP_BASE1_DNAME)
-endif
-	$Qrm -f $(HCP_BASE_OUT)/1apt-source.*
-ifneq (,$(filter $(HCP_BASE0_DNAME),$(HCP_EXISTING_IMAGES)))
-	$Qdocker image rm $(HCP_BASE0_DNAME)
-endif
-	$Qrm -f $(HCP_BASE_OUT)/0import.*
-	$Qrm -rf $(HCP_BASE_OUT)
+	$Qrm -f $(HCP_BASE_OUT)/1apt-source.Dockerfile
+	$Qrm -f $(HCP_BASE_OUT)/0import.Dockerfile
+	$Qrmdir $(HCP_BASE_OUT)
 # Cleanup ordering
 clean: clean_base
 endif

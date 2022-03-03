@@ -24,17 +24,22 @@ $(HCP_BUILDER_OUT)/built: $(HCP_BUILDER_OUT)/Dockerfile
 $(HCP_BUILDER_OUT)/built: $(HCP_BASE_TOUCHFILE)
 $(HCP_BUILDER_OUT)/built: $(HCP_BUILDER_OUT)/git
 $(HCP_BUILDER_OUT)/built:
+	$Qecho "Building container image $(HCP_BUILDER_DNAME)"
 	$Qdocker build -t $(HCP_BUILDER_DNAME) \
 	               -f $(HCP_BUILDER_OUT)/Dockerfile \
 	               $(HCP_BUILDER_OUT)
 	$Qtouch $@
+$(eval $(call pp_rule_docker_image_rm,\
+	$(HCP_BUILDER_OUT)/built,\
+	$(HCP_BUILDER_DNAME),\
+	builder,\
+	clean_builder))
 
 # Cleanup
 ifneq (,$(wildcard $(HCP_BUILDER_OUT)))
 clean_builder: | preclean
-ifneq (,$(filter $(HCP_BUILDER_DNAME),$(HCP_EXISTING_IMAGES)))
-	$Qdocker image rm $(HCP_BUILDER_DNAME)
-endif
-	$Qrm -rf $(HCP_BUILDER_OUT)
+	$Qrm -f $(HCP_BUILDER_OUT)/Dockerfile
+	$Qrm -f $(HCP_BUILDER_OUT)/git
+	$Qrmdir $(HCP_BUILDER_OUT)
 clean_base: clean_builder
 endif
