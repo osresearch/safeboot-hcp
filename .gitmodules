@@ -4,17 +4,17 @@
 	branch = master
 [submodule "ext-tpmware/tpm2-tss"]
 	path = ext-tpmware/tpm2-tss
-	url = ../tpm2-tss.git
+	url = https://github.com/tpm2-software/tpm2-tss.git
 	branch = master
 [submodule "ext-tpmware/tpm2-tools"]
 	path = ext-tpmware/tpm2-tools
-	url = ../tpm2-tools.git
+	url = https://github.com/tpm2-software/tpm2-tools.git
 	branch = master
 [submodule "ext-tpmware/libtpms"]
 	path = ext-tpmware/libtpms
-	url = ../libtpms.git
+	url = https://github.com/stefanberger/libtpms.git
 	branch = master
 [submodule "ext-tpmware/swtpm"]
 	path = ext-tpmware/swtpm
-	url = ../swtpm.git
+	url = https://github.com/stefanberger/swtpm.git
 	branch = master
