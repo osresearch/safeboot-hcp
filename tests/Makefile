@@ -15,10 +15,14 @@ DCOMPOSE="docker-compose --project-name $(TESTUID)"
 define test_case
 $(eval name := $(strip $1))
 $(eval deps := $(strip $2))
+$(eval bashcmd := export DCOMPOSE=$(DCOMPOSE) && \
+	source defaults.env && \
+	export HCP_TEST_PATH="$(HCP_TESTS_SRC)/$(name).sh" && \
+	"$(HCP_TESTS_SRC)/wrapper.sh")
 test_$(name): $(foreach i,$(deps),$(CREATED_$i))
 test_$(name):
 	$Qecho "Starting '$$@'"
-	$QDCOMPOSE=$(DCOMPOSE) bash $(HCP_TESTS_SRC)/$(name).sh
+	$Qbash -c '$(bashcmd)'
 	$Qecho "Successful completion of '$$@'"
 $(eval TESTS += test_$(name))
 endef
