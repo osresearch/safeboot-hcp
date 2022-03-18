@@ -15,7 +15,7 @@ ifneq (,$(wildcard $(tpath)))
 $(pname): $(rname)
 $(rname):
 	$Qecho "Removing container image $(iname)"
-	$Qecho docker image rm $(iname)
+	$Qdocker image rm $(iname)
 	rm $(strip $(tpath))
 endif
 endef
