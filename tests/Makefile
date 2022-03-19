@@ -4,6 +4,7 @@ CREATED_CABOODLE := $(HCP_APPS_OUT)/created.caboodle
 CREATED_CLIENT := $(HCP_APPS_OUT)/created.client
 CREATED_SERVICES := $(foreach i,enroll attest swtpm,\
 			$(HCP_APPS_OUT)/created.$isvc)
+CREATED_CREDS := $(HCP_CREDS_DONE)
 
 # We need a unique ID that can be passed to docker-compose via the '-p'
 # flag, to ensure that any and all containers (and networks) that get
@@ -28,8 +29,8 @@ $(eval TESTS += test_$(name))
 endef
 
 $(eval $(call test_case,caboodle_alone_basic,CABOODLE))
-$(eval $(call test_case,services_client_basic,CLIENT SERVICES))
-$(eval $(call test_case,services_soak_basic,CABOODLE SERVICES))
-$(eval $(call test_case,services_soak_persist,CABOODLE SERVICES))
+$(eval $(call test_case,services_client_basic,CLIENT SERVICES CREDS))
+$(eval $(call test_case,services_soak_basic,CABOODLE SERVICES CREDS))
+$(eval $(call test_case,services_soak_persist,CABOODLE SERVICES CREDS))
 
 tests: $(TESTS)

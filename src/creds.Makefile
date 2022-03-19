@@ -60,9 +60,7 @@ $(HCP_CREDS_OUT)/done.enrollca:
 HCP_CREDS_DONE += $(HCP_CREDS_OUT)/done.enrollca
 
 # A wrapper target to package creds
-creds: $(HCP_CREDS_OUT)/done.enrollsig
-creds: $(HCP_CREDS_OUT)/done.enrollca
-creds: $(HCP_CREDS_OUT)/done.enrollverif
+creds: $(HCP_CREDS_DONE)
 ALL += creds
 
 # Cleanup
