@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [[ "$1" == "describe" ]]; then
-	echo "placebo git version"
-	exit 0
-fi
-
-echo "git stub failing, doesn't handle '$1'" >&2
-exit 1

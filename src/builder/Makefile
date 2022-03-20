@@ -9,10 +9,6 @@ MDIRS += $(HCP_BUILDER_OUT)
 builder: $(HCP_BUILDER_OUT)/built
 ALL += builder
 
-$(HCP_BUILDER_OUT)/git: | $(HCP_BUILDER_OUT)
-$(HCP_BUILDER_OUT)/git: $(HCP_BUILDER_SRC)/git
-	$Qcp $< $@
-
 $(HCP_BUILDER_OUT)/Dockerfile: | $(HCP_BUILDER_OUT)
 $(HCP_BUILDER_OUT)/Dockerfile: $(HCP_BUILDER_SRC)/Makefile
 $(HCP_BUILDER_OUT)/Dockerfile: $(HCP_BUILDER_SRC)/Dockerfile
@@ -22,7 +18,6 @@ $(HCP_BUILDER_OUT)/Dockerfile:
 
 $(HCP_BUILDER_OUT)/built: $(HCP_BUILDER_OUT)/Dockerfile
 $(HCP_BUILDER_OUT)/built: $(HCP_BASE_TOUCHFILE)
-$(HCP_BUILDER_OUT)/built: $(HCP_BUILDER_OUT)/git
 $(HCP_BUILDER_OUT)/built:
 	$Qecho "Building container image $(HCP_BUILDER_DNAME)"
 	$Qdocker build -t $(HCP_BUILDER_DNAME) \
@@ -39,7 +34,6 @@ $(eval $(call pp_rule_docker_image_rm,\
 ifneq (,$(wildcard $(HCP_BUILDER_OUT)))
 clean_builder: | preclean
 	$Qrm -f $(HCP_BUILDER_OUT)/Dockerfile
-	$Qrm -f $(HCP_BUILDER_OUT)/git
 	$Qrmdir $(HCP_BUILDER_OUT)
 clean_base: clean_builder
 endif

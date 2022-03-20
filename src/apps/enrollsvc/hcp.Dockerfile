@@ -1,9 +1,3 @@
-RUN apt-get install -y git
-RUN apt-get install -y python3 python3-flask jq procmail
-RUN apt-get install -y file time sudo
-RUN apt-get install -y uwsgi-plugin-python3
-RUN apt-get install -y dnsutils
-
 # Security note: there are some subtleties about environment values that aren't
 # visible here but are worth knowing about. See common.sh for the gritty
 # details.
