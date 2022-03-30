@@ -4,7 +4,7 @@ HCP_SAFEBOOT_SRC := $(TOP)/ext-safeboot
 $(HCP_SAFEBOOT_OUT): | $(HCP_OUT)
 MDIRS += $(HCP_SAFEBOOT_OUT)
 
-HCP_SAFEBOOT_INSTALL := $(HCP_DSPACE)safeboot
+HCP_SAFEBOOT_INSTALL := $(HCP_IMAGE_PREFIX)safeboot
 HCP_SAFEBOOT_INSTALL_TOUCH := $(HCP_SAFEBOOT_OUT)/vol.created
 $(HCP_SAFEBOOT_INSTALL_TOUCH): | $(HCP_SAFEBOOT_OUT)
 	$Qdocker volume create $(HCP_SAFEBOOT_INSTALL)
@@ -13,7 +13,7 @@ $(HCP_SAFEBOOT_INSTALL_TOUCH): | $(HCP_SAFEBOOT_OUT)
 HCP_SAFEBOOT_INSTALL_DEST := /safeboot
 
 HCP_SAFEBOOT_DOCKER_RUN := \
-	docker run -i --rm --label $(HCP_DSPACE)all=1 \
+	docker run -i --rm --label $(HCP_IMAGE_PREFIX)all=1 \
 	--mount type=volume,source=$(HCP_SAFEBOOT_INSTALL),destination=$(HCP_SAFEBOOT_INSTALL_DEST) \
 	--mount type=bind,source=$(HCP_SAFEBOOT_SRC),destination=/source,ro=true \
 	$(HCP_BASE_DNAME) \
@@ -63,7 +63,7 @@ $(eval $(call safeboot_subset,sb.initramfs,/initramfs/,755,\
 ###################
 
 HCP_SAFEBOOT_INSTALL_RUN := \
-	docker run -i --rm --label $(HCP_DSPACE)all=1 \
+	docker run -i --rm --label $(HCP_IMAGE_PREFIX)all=1 \
 	--mount type=volume,source=$(HCP_SAFEBOOT_INSTALL),destination=$(HCP_SAFEBOOT_INSTALL_DEST) \
 	--mount type=bind,source=$(HCP_SAFEBOOT_OUT),destination=/put_it_here \
 	$(HCP_BASE_DNAME) \

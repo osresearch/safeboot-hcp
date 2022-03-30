@@ -1,20 +1,10 @@
-# All Docker objects created by this workflow will be prefixed with this string
-# in order to allow multiple independent environments to be built and tested on
-# the same host system. (E.g. this can include a "/" separator for user
-# repositories.)
-HCP_DSPACE ?= hcp_
-
-# Specifies the tag suffix to be used for all Docker container images we create
-# and use. When this is empty, Docker creates images with a default tag
-# (usually "latest"), but with this setting lets you override that.  (E.g.
-# "debug", "production", "cloud", "$(commit_id)", ...) In this workflow, a
-# build of "whatever" would produce a container image called;
-#     $(HCP_DSPACE)whatever:$(HCP_DTAG)
-HCP_DTAG ?= devel
-# Now prefix the ":" once and for all;
-ifdef HCP_DTAG
-HCP_DTAG := :$(HCP_DTAG)
-endif
+# Docker image naming is used at build time (here) and at run time
+# (docker-compose.yml). The latter gets its assumptions from defaults.env, so
+# we import those here too, for consistency.
+HCP_IMAGE_PREFIX := $(shell bash -c "source defaults.env ; echo \$${HCP_IMAGE_PREFIX:-hcp_}")
+HCP_IMAGE_TAG := $(shell bash -c "source defaults.env ; echo \$${HCP_IMAGE_TAG:-devel}")
+# Function for converting '$1' into a fully-qualified docker image name
+HCP_IMAGE=$(HCP_IMAGE_PREFIX)$1:$(HCP_IMAGE_TAG)
 
 # Specify the underlying (debian-based) docker image to use as the system
 # environment for all operations.

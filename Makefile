@@ -58,7 +58,7 @@ all: $(ALL)
 # exited containers and remove them. Making sure it runs before your cleanup
 # routine helps ensure your "docker image rm" statements don't fail.
 preclean:
-	$Qdocker container ls -a -q --filter=label=$(HCP_DSPACE)all | \
+	$Qdocker container ls -a -q --filter=label=$(HCP_IMAGE_PREFIX)all | \
 		xargs -r docker container rm
 
 # As a discipline measure, we use 'rmdir' rather than 'rm -rf'. The concept is

@@ -4,7 +4,7 @@ $(HCP_CREDS_OUT): | $(HCP_OUT)
 MDIRS += $(HCP_CREDS_OUT)
 
 HCP_CREDS_DOCKER_RUN := \
-	docker run -i --rm --label $(HCP_DSPACE)all=1 \
+	docker run -i --rm --label $(HCP_IMAGE_PREFIX)all=1 \
 	--mount type=bind,source=$(HCP_CREDS_OUT),destination=/creds \
 	$(HCP_BASE_DNAME) \
 	bash -c

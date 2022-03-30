@@ -31,21 +31,21 @@
 
 HCP_BASE_SRC := $(HCP_SRC)/base
 HCP_BASE_OUT := $(HCP_OUT)/base
-HCP_BASE0_DNAME := $(HCP_DSPACE)base_0import$(HCP_DTAG)
-HCP_BASE1_DNAME := $(HCP_DSPACE)base_1apt-source$(HCP_DTAG)
-HCP_BASE2_DNAME := $(HCP_DSPACE)base_2apt-usable$(HCP_DTAG)
-HCP_BASE3_DNAME := $(HCP_DSPACE)base_3add-cacerts$(HCP_DTAG)
-HCP_BASE4_DNAME := $(HCP_DSPACE)base_4platform$(HCP_DTAG)
+HCP_BASE0_DNAME := $(call HCP_IMAGE,base_0import)
+HCP_BASE1_DNAME := $(call HCP_IMAGE,base_1apt-source)
+HCP_BASE2_DNAME := $(call HCP_IMAGE,base_2apt-usable)
+HCP_BASE3_DNAME := $(call HCP_IMAGE,base_3add-cacerts)
+HCP_BASE4_DNAME := $(call HCP_IMAGE,base_4platform)
 
 $(HCP_BASE_OUT): | $(HCP_OUT)
 MDIRS += $(HCP_BASE_OUT)
 
 # For downstream (builds, apps, ...) usage;
 # - Depend on $(HCP_BASE_TOUCHFILE) to ensure it is (re)built as required.
-# - Use "FROM $(HCP_DSPACE)$(HCP_BASE_IMAGE)" to derive images.
+# - Use "FROM $(HCP_BASE_DNAME)" to derive images.
 HCP_BASE_TOUCHFILE := $(HCP_BASE_OUT)/4platform.built
 HCP_BASE_IMAGE := base_4platform
-HCP_BASE_DNAME := $(HCP_DSPACE)$(HCP_BASE_IMAGE)$(HCP_DTAG)
+HCP_BASE_DNAME := $(call HCP_IMAGE,$(HCP_BASE_IMAGE))
 
 # A wrapper target to build the "base platform" image
 base: $(HCP_BASE_TOUCHFILE)
@@ -63,7 +63,7 @@ $(HCP_BASE_OUT)/0import.Dockerfile: $(HCP_BASE_DEPS_COMMON)
 $(HCP_BASE_OUT)/0import.Dockerfile:
 	$Qecho "FROM $(HCP_BASE)" > $@
 	$Qecho "ENV HCP_VER=$(HCP_VER)" >> $@
-	$Qecho "LABEL $(HCP_DSPACE)all=1" >> $@
+	$Qecho "LABEL $(HCP_IMAGE_PREFIX)all=1" >> $@
 
 $(HCP_BASE_OUT)/0import.built: $(HCP_BASE_OUT)/0import.Dockerfile
 $(HCP_BASE_OUT)/0import.built:

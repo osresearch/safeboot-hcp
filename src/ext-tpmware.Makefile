@@ -8,7 +8,7 @@ MDIRS += $(HCP_TPMWARE_OUT)
 # container mounts this as it configures submodule code to compile and install
 # to this path, and inter-submodule dependencies (headers, linking, ...) also
 # use this install path to find each others' stuff.
-HCP_TPMWARE_INSTALL := $(HCP_DSPACE)tpmware
+HCP_TPMWARE_INSTALL := $(HCP_IMAGE_PREFIX)tpmware
 HCP_TPMWARE_INSTALL_TOUCH := $(HCP_TPMWARE_OUT)/vol.created
 $(HCP_TPMWARE_INSTALL_TOUCH): | $(HCP_TPMWARE_OUT)
 	$Qdocker volume create $(HCP_TPMWARE_INSTALL)
@@ -20,7 +20,7 @@ HCP_TPMWARE_INSTALL_DEST := /install
 # TODO: make this work with a read-only mount of the submodule
 # The "docker run" preamble that mounts "install" where it should go
 HCP_TPMWARE_DOCKER_RUN := \
-	docker run -i --rm --label $(HCP_DSPACE)all=1 \
+	docker run -i --rm --label $(HCP_IMAGE_PREFIX)all=1 \
 	--mount type=volume,source=$(HCP_TPMWARE_INSTALL),destination=$(HCP_TPMWARE_INSTALL_DEST)
 
 # If we declare build targets with a normal dependency on

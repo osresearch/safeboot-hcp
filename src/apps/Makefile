@@ -23,9 +23,9 @@ $(HCP_APPS_OUT)/$1/Dockerfile: $(HCP_APPS_OUT)/$1/hcp.Dockerfile
 $(HCP_APPS_OUT)/created.$1: $(HCP_APPS_OUT)/$1/Dockerfile
 $(HCP_APPS_OUT)/created.$1: $(HCP_APPS_BASE_TOUCH)
 $(HCP_APPS_OUT)/created.$1:
-	$Qecho "Building container image $1 ($(HCP_DSPACE)$1$(HCP_DTAG))"
+	$Qecho "Building container image $1 ($(call HCP_IMAGE,$1))"
 	$Qdocker build \
-		-t $(HCP_DSPACE)$1$(HCP_DTAG) \
+		-t $(call HCP_IMAGE,$1) \
 		-f $(HCP_APPS_OUT)/$1/Dockerfile \
 		$2 \
 		$(HCP_APPS_OUT)
@@ -35,7 +35,7 @@ ALL += $1
 APPS += $1
 $(eval $(call pp_rule_docker_image_rm,\
 	$(HCP_APPS_OUT)/created.$1,\
-	$(HCP_DSPACE)$1$(HCP_DTAG),\
+	$(call HCP_IMAGE,$1),\
 	apps_$1,\
 	clean_$1))
 ifneq (,$(wildcard $(HCP_APPS_OUT)/$1))
@@ -58,7 +58,7 @@ $(eval $(call app_add,common,$(HCP_TPMWARE_OUT)/,install.tar.gz))
 
 # And the point - change the base layer (and dependency touchfile) used for
 # subsequent apps;
-HCP_APPS_BASE := $(HCP_DSPACE)common$(HCP_DTAG)
+HCP_APPS_BASE := $(call HCP_IMAGE,common)
 HCP_APPS_BASE_TOUCH := $(HCP_APPS_OUT)/created.common
 
 ######################
