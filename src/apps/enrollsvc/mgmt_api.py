@@ -76,8 +76,8 @@ def my_add():
         return { "error": "ekpub not in request" }
     if 'hostname' not in request.form:
         return { "error": "hostname not in request" }
-    f = request.files['ekpub']
-    h = request.form['hostname']
+    form_ekpub = request.files['ekpub']
+    form_hostname = request.form['hostname']
     # Create a temporary directory (for the ek.pub file), and make it world
     # readable+executable. The /hcp/enrollsvc/op_add.sh script runs behind
     # sudo, as another user, and it needs to be able to read the ek.pub.
@@ -87,9 +87,10 @@ def my_add():
     # Sanitize the user-supplied filename, and join it to the temp directory,
     # this is where the ek.pub file gets saved and is the path passed to the
     # op_add.sh script.
-    p = os.path.join(tf.name, secure_filename(f.filename))
-    f.save(p)
-    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_add.sh', p, h],
+    local_ekpub = os.path.join(tf.name, secure_filename(form_ekpub.filename))
+    form_ekpub.save(local_ekpub)
+    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_add.sh',
+                                   local_ekpub, form_hostname],
                        stdout = subprocess.PIPE, stderr = subprocess.PIPE,
                        text = True)
     if c.returncode != 0:
@@ -108,8 +109,9 @@ def my_add():
 def my_query():
     if 'ekpubhash' not in request.args:
         return { "error": "ekpubhash not in request" }
-    h = request.args['ekpubhash']
-    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_query.sh', h],
+    form_ekpubhash = request.args['ekpubhash']
+    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_query.sh',
+                                   form_ekpubhash],
                        stdout=subprocess.PIPE, stderr = subprocess.PIPE,
                        text=True)
     print(c.stdout)
@@ -122,8 +124,9 @@ def my_query():
 
 @app.route('/v1/delete', methods=['POST'])
 def my_delete():
-    h = request.form['ekpubhash']
-    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_delete.sh', h],
+    form_ekpubhash = request.form['ekpubhash']
+    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_delete.sh',
+                                   form_ekpubhash],
                        stdout=subprocess.PIPE, stderr = subprocess.PIPE,
                        text=True)
     print(c.stdout)
@@ -136,8 +139,9 @@ def my_delete():
 
 @app.route('/v1/find', methods=['GET'])
 def my_find():
-    h = request.args['hostname_suffix']
-    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_find.sh', h],
+    form_hostname_suffix = request.args['hostname_suffix']
+    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_find.sh',
+                                   form_hostname_suffix],
                        stdout=subprocess.PIPE, stderr = subprocess.PIPE,
                        text=True)
     print(c.stdout)
