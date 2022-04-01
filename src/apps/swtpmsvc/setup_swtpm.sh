@@ -59,7 +59,7 @@ if [[ -n "$HCP_SWTPMSVC_ENROLL_API" && -z "$HCP_SWTPMSVC_NO_ENROLL" ]]; then
 	waitinc=3
 	waitcount=0
 	until python3 /hcp/swtpmsvc/enroll_api.py --api $HCP_SWTPMSVC_ENROLL_API \
-        	        add $TPMDIR/ek.pub $HCP_SWTPMSVC_ENROLL_HOSTNAME;
+			add $TPMDIR/ek.pub $HCP_SWTPMSVC_ENROLL_HOSTNAME;
         do
 		if [[ $((++waitcount)) -eq 10 ]]; then
 			echo "Error: state not initialized, failing"
