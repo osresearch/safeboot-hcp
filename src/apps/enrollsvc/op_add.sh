@@ -15,6 +15,8 @@ function my_tee {
 echo "Starting $0" >&2
 echo "  - Param1=$1 (path to ek.pub/ek.pem)" >&2
 echo "  - Param2=$2 (hostname)" >&2
+echo "  - Param3=$3 (profile)" >&2
+echo "  - Param4=$4 (path to paramfile)" >&2
 
 # args must be non-empty
 if [[ -z $1 || -z $2 ]]; then
@@ -42,9 +44,22 @@ cd /safeboot
 
 export EPHEMERAL_ENROLL=`mktemp -d -u`
 
+# For now, we pass the 'profile' ($3) and 'paramfile' ($4) arguments as
+# exported environment variables. Better would be to add the following to the
+# attest-enroll command line;
+#     -V PROFILE="$3"
+#     -V PARAMFILE="$4"
+# But this requires that sbin/attest-enroll support these configuration
+# variables. I.e.  by adding these declarations to the attest-enroll script;
+#     vars[PROFILE]=scalar
+#     vars[PARAMFILE]=scalar
+export ENROLL_PROFILE=$3
+export ENROLL_PARAMFILE=$4
+
 ./sbin/attest-enroll -C /safeboot/enroll.conf \
 		-V CHECKOUT=/hcp/enrollsvc/cb_checkout.sh \
-		-V COMMIT=/hcp/enrollsvc/cb_commit.sh -I $1 $2 >&2 ||
+		-V COMMIT=/hcp/enrollsvc/cb_commit.sh \
+		-I $1 $2 >&2 ||
 	my_tee "Error, 'attest-enroll' failed" 1 ||
 	exit 1
 

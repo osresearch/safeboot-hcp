@@ -78,6 +78,14 @@ def my_add():
         return { "error": "hostname not in request" }
     form_ekpub = request.files['ekpub']
     form_hostname = request.form['hostname']
+    if 'profile' not in request.form:
+        form_profile = "default"
+    else:
+        form_profile = request.form['profile']
+    if 'paramfile' not in request.files:
+        form_paramfile = None
+    else:
+        form_paramfile = request.files['paramfile']
     # Create a temporary directory (for the ek.pub file), and make it world
     # readable+executable. The /hcp/enrollsvc/op_add.sh script runs behind
     # sudo, as another user, and it needs to be able to read the ek.pub.
@@ -87,10 +95,18 @@ def my_add():
     # Sanitize the user-supplied filename, and join it to the temp directory,
     # this is where the ek.pub file gets saved and is the path passed to the
     # op_add.sh script.
-    local_ekpub = os.path.join(tf.name, secure_filename(form_ekpub.filename))
+    local_ekpub = os.path.join(tf.name,
+                               secure_filename(form_ekpub.filename))
     form_ekpub.save(local_ekpub)
-    c = subprocess.run(sudoargs + ['/hcp/enrollsvc/op_add.sh',
-                                   local_ekpub, form_hostname],
+    if form_paramfile:
+        local_paramfile = os.path.join(tf.name,
+                                       secure_filename(form_paramfile.filename))
+        form_paramfile.save(local_paramfile)
+    opadd_args = sudoargs + ['/hcp/enrollsvc/op_add.sh',
+                             local_ekpub, form_hostname, form_profile]
+    if form_paramfile is not None:
+        opadd_args += [local_paramfile]
+    c = subprocess.run(opadd_args,
                        stdout = subprocess.PIPE, stderr = subprocess.PIPE,
                        text = True)
     if c.returncode != 0:
@@ -99,8 +115,8 @@ def my_add():
         print("Failed operation, dumping stderr")
         print(c.stderr, file = sys.stderr)
         return {
-                    "returncode": c.returncode,
-                    "txt": c.stdout
+            "returncode": c.returncode,
+            "txt": c.stdout
         }
     j = json.loads(c.stdout)
     return j
